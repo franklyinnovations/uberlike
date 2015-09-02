@@ -1,5 +1,4 @@
 var express = require('express');
-var mongo = require('mongoskin');
 var uuid = require('node-uuid');
 var md5 = require('md5');
 var FacebookStrategy = require('passport-facebook').Strategy;
@@ -8,7 +7,7 @@ var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;//OAuthStra
 var twilio = require('twilio');
 
 var router = express.Router();
-var db = mongo.db("mongodb://localhost:27017/uberlikedb"); // logintest
+//var db = mongo.db("mongodb://localhost:27017/uberlikedb"); // logintest
 var moment = require('moment');
 console.log("utc time is:"+moment.utc());
 console.log("utc formate date and time after 4 hours is:"+moment.utc().add(4, 'hours').format('YYYY-MM-DD HH:mm:ss'));

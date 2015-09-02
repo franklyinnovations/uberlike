@@ -6,11 +6,14 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var exphbs = require('express3-handlebars');
 passport= require('passport');
+var mongo = require('mongoskin');
+db = mongo.db("mongodb://localhost:27017/uberlikedb");
 var routes = require('./routes/index');
 var users = require('./routes/users');
+var passengers = require('./routes/passengers');
+var drivers = require('./routes/drivers');
 mail = require("./routes/mail");
 message = require('./routes/message');
-
 app = express();
 
 // view engine setup
@@ -59,7 +62,8 @@ passport.serializeUser(function(user, done) {
 
 app.use('/', routes);
 app.use('/users', users);
-
+app.use('/drivers',drivers);
+app.use('/passengers',passengers);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

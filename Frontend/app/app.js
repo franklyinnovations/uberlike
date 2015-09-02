@@ -18,6 +18,11 @@ app.config(['$routeProvider',
                 templateUrl: 'partials/dashboard.html',
                 controller: 'mapController'//'authCtrl'
             })
+            .when('/driverdashboard',{
+                title:'Dashboard',
+                templateUrl:'partials/driverdashboard.html',
+                controller:'mapController'
+            })
             .when('/signupdriver',{
                title: 'Signup',
                 templateUrl: 'partials/signupDriver.html',
@@ -69,6 +74,7 @@ app.config(['$routeProvider',
 
           /*
            if(($rootScope.userinfo)&&($rootScope.userinfo._id)&&($rootScope.userinfo.phonenumber)&&($rootScope.userinfo.confirm)&&($rootScope.userinfo.mconfirm)){
+           // based on usertype you can redirect to which dashboard.
             $location.path("/dashboard");
            }else if(!(($rootScope.userinfo)&&($rootScope.userinfo._id))){
             $location.path("/");
