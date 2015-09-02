@@ -1,0 +1,107 @@
+<div class="page-content">
+
+<div class="row">
+<div class="space-6"></div>
+<div class="col-sm-10 col-sm-offset-1">
+    <div id="login-box" class="login-box visible widget-box no-border">
+        <div class="widget-body">
+            <div class="widget-main">
+                <h4 class="header blue lighter bigger">
+                    <i class="icon-coffee green"></i>
+                    Update Your details
+                </h4>
+
+                <div class="space-16"></div>
+                <div class="space-16"></div>
+                <div class="space-16"></div>
+                <button type="button" class="default" ng-click=changeUsertype({"passenger":true})>Passenger</button>
+                <div class="space-16"></div>
+                <div class="space-16"></div>
+                <button type="button" class="default" ng-click=changeUsertype({"passenger":false})>Driver</button>
+                <div class="space-16"></div>
+                <div class="space-16"></div>
+                <div class="space-16"></div>
+
+                <form name="mobileForm" class="form-horizontal" role="form" ng-show=passenger>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right" for="mobilenumber"> Enter MobileNumber:  </label>
+                        <div class="col-sm-7">
+                           <span class="block input-icon input-icon-right">
+                                <input type="text" class="form-control" placeholder="MobileNumber" name="mobilenumber" ng-model="userdata.mobilenumber" required focus/>
+                                <span ng-show="userdata.mobilenumber.$dirty" class="help-inline">Please enter MobileNumber</span> 
+                                <i class="ace-icon fa fa-user"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="space"></div>
+                     <div class="clearfix">
+                                                        <div class="row">
+                         <label class="col-sm-3 control-label no-padding-right"> </label>
+                        <div class="col-sm-7">
+                            <button type="submit" class="width-35 pull-right btn btn-sm btn-primary" ng-click="doMobileNumUpdate(userdata)" data-ng-disabled="mobileForm.$invalid">
+                                <i class="ace-icon fa fa-key"></i>
+                                Submit
+                            </button>
+                                                            </div>
+                        </div>
+                    </div>
+                        <div class="space-4"></div>
+                <div class="space-4"></div>
+                </form>
+                <form name="driverForm" class="form-horizontal" role="form" ng-hide=passenger>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right" for="mobilenumber"> Enter MobileNumber:  </label>
+                        <div class="col-sm-7">
+                           <span class="block input-icon input-icon-right">
+                                <input type="text" class="form-control" placeholder="MobileNumber" name="mobilenumber" ng-model="driverdata.mobilenumber" required focus/>
+                                <span ng-show="driverdata.mobilenumber.$dirty" class="help-inline">Please enter MobileNumber</span> 
+                                <i class="ace-icon fa fa-user"></i>
+                            </span>
+                        </div>
+                    </div>
+                     <div class="form-group">
+                                <label class="col-sm-5 control-label no-padding-right" for="licence">DriverLicence</label>
+                                <div class="col-sm-7">
+                                    <span class="block input-icon input-icon-right">
+                                <input type="text" class="form-control" placeholder="Driver Licence" ng-model="driverdata.licenceId" required/>
+                            </span>
+                                </div>
+                            </div>
+                             <div class="form-group">
+                                <label class="col-sm-5 control-label no-padding-right" for="vnumber">Vehicle number</label>
+                                <div class="col-sm-7">
+                                    <span class="block input-icon input-icon-right">
+                                <input type="text" class="form-control" placeholder="Vehicle Number" ng-model="driverdata.vnumber" required/>
+                            </span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-5 control-label no-padding-right" for="ctype">Car Type</label>
+                                <div class="col-sm-7">
+                                    <span class="block input-icon input-icon-right">
+                                <input type="text" class="form-control" placeholder="Car Type" ng-model="driverdata.ctype" />
+                            </span>
+                                </div>
+                            </div>
+                    <div class="space"></div>
+                     <div class="clearfix">
+                                                        <div class="row">
+                         <label class="col-sm-3 control-label no-padding-right"> </label>
+                        <div class="col-sm-7">
+                            <button type="submit" class="width-35 pull-right btn btn-sm btn-primary" ng-click="doDriverDataUpdate(driverdata)" data-ng-disabled="driverForm.$invalid">
+                                <i class="ace-icon fa fa-key"></i>
+                                Submit
+                            </button>
+                                                            </div>
+                        </div>
+                    </div>
+                        <div class="space-4"></div>
+                <div class="space-4"></div>
+                </form>
+            </div><!-- /widget-main -->
+        </div><!-- /widget-body -->
+    </div><!-- /login-box -->
+
+</div><!-- /position-relative -->
+</div>
+</div><!-- /.page-content -->
