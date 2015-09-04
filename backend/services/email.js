@@ -1,6 +1,6 @@
 var nodemailer = require('nodemailer');
 
-module.exports = function sendemail(options,callback) {
+module.exports = function sendEmail(options,callback) {
 
     var transporter = nodemailer.createTransport({
         service: 'Gmail',
