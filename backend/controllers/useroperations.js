@@ -4,6 +4,7 @@ var uuid = require('node-uuid');
 var md5 = require('md5');
 var twilio = require('twilio');
 var moment = require('moment');
+var validator = require('validator');
 var host = "http://localhost:3000";
 
 	function controle(req,res,next){
@@ -55,7 +56,7 @@ if(err){
 	user.confid = uuid.v4();
 	user.confirm = true;
 	user.enable = false;
-	user.signupdate = moment.utc().format('YYYY-MM-DDTHH:mm:ss');
+	user.signupdate = moment.utc().format(); //'YYYY-MM-DDTHH:mm:ss'
 	var confirmid= user.confid;
 	db.collection("user").insert(user,function(err1,result1){
 		if(err1){
@@ -80,6 +81,15 @@ function insertuser(req,res,next){
 var data = req.body;
 console.log(data);
 if(data.email && data.password && data.phonenumber){
+	var phoneReg = new RegExp("^(0|\+91)?[789]\d{9}$");
+	if(validator.isEmail(data.email)){
+		if(!(validator.isNull(data.password))){
+			//isLength(str, min
+			if(validator.isLength(data.password,8)){
+
+				if(phoneReg.test()){
+
+			
 	data.password = md5(data.password);
 	if(data.usertype=="D"){
 		console.log("driver registration");
@@ -99,7 +109,7 @@ res.send({"status":"error","msg":"error while getting the user data"});
 }else if(result){
 res.send({"status":"error","msg":"user email or phone number already exists"});
 }else{
-	data.signupdate = moment.utc().format('YYYY-MM-DDTHH:mm:ss');
+	data.signupdate = moment.utc().format(); // 'YYYY-MM-DDTHH:mm:ss'
  db.collection("user").insert(data,function(err,result1){
      if(err){
      	res.send({"status":"error","msg":"failed to insert user information"});
@@ -120,7 +130,7 @@ res.send({"status":"error","msg":"user email or phone number already exists"});
      		optionaldata.html = html;//"conform mail by click <a href="+passeddata.conformationlink+">here</a>";//html;
      		optionaldata.subject = "Registartion Conformation mail";
 
-     		 mail(optionaldata,function(err,success){
+     		 email(optionaldata,function(err,success){
      		 	if(err){
      		 		res.send({"status":"error","msg":"mail sending to user is failed"});
      		 	}else{
@@ -128,7 +138,7 @@ res.send({"status":"error","msg":"user email or phone number already exists"});
      		 	 //	
      		 	 var messagetext = "Please confirm your mobile number by entering :-"+data.mconfid+"."+"To continue verification process";
      		 	 var mobilenumber = data.phonenumber; 
-     		 	 message(mobilenumber,messagetext,function(err,messageResult){
+     		 	 sms(mobilenumber,messagetext,function(err,messageResult){
      		 	 	if(err){
      		 	 		console.log(err);
      		 	 		res.send({"status":"error","msg":"message sending failed"});
@@ -146,6 +156,21 @@ res.send({"status":"error","msg":"user email or phone number already exists"});
  });
 }
 });
+
+	}else{
+					res.send({"status":"error","msg":"Please enter valid Phone number"});
+				}
+			}else{
+					res.send({"status":"error","msg":"password must be 8 characters or more"});
+			}
+		}else{
+					res.send({"status":"error","msg":"Please enter password"});
+		}
+	}else{
+					res.send({"status":"error","msg":"Please enter valid email"});
+	}
+
+
 }else{
 	res.send({"status":"error","msg":"one or more fields are missing"});
 }
@@ -157,6 +182,11 @@ function login(req,res,next){
 var userinfo = req.body;
 console.log(req.body);
 if(userinfo.email && userinfo.password){
+		if(validator.isEmail(data.email)){
+		if(!(validator.isNull(data.password))){
+			//isLength(str, min
+			if(validator.isLength(data.password,8)){
+
 	userinfo.password = md5(userinfo.password);
 	//"provider":{"$ne":["F","G"]
 db.collection("user").findOne({"email":userinfo.email,"password":userinfo.password},function(err,result){
@@ -169,6 +199,18 @@ res.send({"status":"error","msg":"failed to get user data"});
 res.send({"status":"error","msg":"username or password incorrect"});
 }
 });
+
+
+}else{
+					res.send({"status":"error","msg":"password must be 8 characters or more"});
+			}
+		}else{
+					res.send({"status":"error","msg":"Please enter password"});
+		}
+	}else{
+					res.send({"status":"error","msg":"Please enter valid email"});
+	}
+
 }else{
 	res.send({"status":"error","msg":"one or more fields are missing"});
 }
@@ -180,6 +222,7 @@ function forgotpassword(req,res,next){
 var data = req.body;
 console.log(data);
 if(data.email){
+	if(validator.isEmail(data.email)){
 	db.collection("user").findOne({"email":data.email},function(err,result){
 		if(err){
 			res.send({"status":"error","msg":"error while getting the user information"});
@@ -188,7 +231,7 @@ if(data.email){
 			console.log(result);
 			var temppasswordset = {};
 			temppasswordset.tpassword= uuid.v4();//Math.random().toString(36).substr(2,8);
-			temppasswordset.exptime = moment.utc().add(4, 'hours').format('YYYY-MM-DDTHH:mm:ss');
+			temppasswordset.exptime = moment.utc().add(4, 'hours').format(); // 'YYYY-MM-DDTHH:mm:ss'
 			temppasswordset.preset = false;
 			var forgotpassword = uuid.v4();
 			var passeddata = {};
@@ -205,7 +248,7 @@ if(data.email){
      		optionaldata.html = html;//"conform mail by click <a href="+passeddata.conformationlink+">here</a>";//html;
      		optionaldata.subject = "Reset password";
 
-     		 mail(optionaldata,function(err,success){
+     		 email(optionaldata,function(err,success){
      		 	if(err){
      		 		res.send({"status":"error","msg":"mail sending to user is failed"});
      		 	}else{
@@ -226,6 +269,9 @@ if(data.email){
 			res.send({"status":"error","msg":"email does not exists."});
 		}
 	});
+}else{
+					res.send({"status":"error","msg":"Please enter valid email"});
+	}
 }else{
 	res.send({"status":"error","msg":"user email is required"});
 }
@@ -259,7 +305,7 @@ db.collection("user").update({"_id":result._id},{"$set":{"confirm":true,"enable"
 }
 });
 }else{
-	res.send({"status":"error","msg":"Required code is missing"});
+	res.send({"status":"error","msg":"Confirmation code is missing"});
 }
 }
 
@@ -267,7 +313,8 @@ db.collection("user").update({"_id":result._id},{"$set":{"confirm":true,"enable"
 
 function resetpage(req,res,next){
 var tlink = req.params.tpassword;
-var settime = moment.utc().format('YYYY-MM-DDTHH:mm:ss');
+if(tlink){
+var settime = moment.utc().format(); // 'YYYY-MM-DDTHH:mm:ss'
 db.collection("user").findOne({"tpassword":tlink},function(err,result){
 	console.log(result);
 if(err){
@@ -278,6 +325,9 @@ res.render('reset-pwd',result);
 	res.send({"status":"error","msg":"Link expired or Does not exists."});
 }
 });
+}else{
+	res.send({"status":"error","msg":"Please enter valid url"});
+}
 }
 
 // reset password user updates newpassword
@@ -286,6 +336,11 @@ function resetpasswd(req,res,next){
 var data = req.body;
 console.log(data);
 if(data._id&&data.password){
+
+if(!(validator.isNull(data.password))){
+			//isLength(str, min
+			if(validator.isLength(data.password,8)){
+
 db.collection("user").findOne({"_id":data._id},function(err,result){
 	if(err){
 		res.send({"status":"error","msg":"Error while getting user information."});
@@ -302,6 +357,13 @@ db.collection("user").findOne({"_id":data._id},function(err,result){
 	}
 });
 }else{
+					res.send({"status":"error","msg":"password must be 8 characters or more"});
+			}
+		}else{
+					res.send({"status":"error","msg":"Please enter password"});
+		}
+
+}else{
 	res.send({"status":"error","msg":"Some user info is missing."});
 }
 }
@@ -311,6 +373,8 @@ db.collection("user").findOne({"_id":data._id},function(err,result){
 function verifymobile(req,res,next){
 	var data = req.body;
 	console.log(data);
+	if(!(validator.isNull(data.mconfirm))){
+
 	db.collection("user").findOne({"_id":data._id},function(err,result){
 		if(err){
 			res.send({"status":"error","msg":"error while getting userinfo"});
@@ -339,6 +403,11 @@ function verifymobile(req,res,next){
 			res.send({"status":"error","msg":"user does not exists."});
 		}
 	});
+
+	}else{
+		res.send({"status":"error","msg":"Please enter confirmation code"});
+	}
+
 }
 
 //updating passenger mobile number
@@ -346,6 +415,8 @@ function verifymobile(req,res,next){
 function updatemobilenum(req,res,next){
 	var data = req.body;
 	if(data.phonenumber){
+		var phoneReg = new RegExp("^(0|\+91)?[789]\d{9}$");
+		if(phoneReg.test()){
 		var usertype = data.usertype;
 		data.mconfid = Math.random().toString(36).substr(2,4);
 		db.collection("user").findOne({"phonenumber":data.phonenumber},function(err,result){
@@ -361,7 +432,7 @@ function updatemobilenum(req,res,next){
 						}else{
 							 var messagetext = "Please confirm your mobile number by entering "+data.mconfid+"."+"To continue verification process";
      		 	 var mobilenumber = data.phonenumber; 
-     		 	 message(mobilenumber,messagetext,function(err2,messageResult){
+     		 	 sms(mobilenumber,messagetext,function(err2,messageResult){
      		 	 	if(err2){
      		 	 		console.log(err2);
      		 	 		res.send({"status":"error","msg":"message sending failed"});
@@ -374,6 +445,9 @@ function updatemobilenum(req,res,next){
 				}
 			}
 		})
+}else{
+			res.send({"status":"error","msg":"Please enter valid phone number"});
+		}
 	}else{
 		res.send({"status":"error","msg":"please enter mobilenumber"});
 	}
@@ -383,6 +457,7 @@ function updatemobilenum(req,res,next){
 
 function mesgsend(req,res,next){
 	var data = req.body;
+	if(data._id){
 db.collection("user").findOne({"_id":data._id},function(err,result1){
 	if(err){
 		res.send({"status":"error","msg":"error while getting userinfo"});
@@ -397,7 +472,7 @@ db.collection("user").update({"_id":result._id},{"$set":newobj},function(err1,re
 					}else{
 						 var messagetext = "Please confirm your mobile number by entering "+newobj.mconfid+"."+"To continue verification process";
      		 	 var mobilenumber = result1.phonenumber; 
-     		 	 message(mobilenumber,messagetext,function(err,messageResult){
+     		 	 sms(mobilenumber,messagetext,function(err,messageResult){
      		 	 	if(err){
      		 	 		console.log(err);
      		 	 		res.send({"status":"error","msg":"message sending failed"});
@@ -414,15 +489,21 @@ db.collection("user").update({"_id":result._id},{"$set":newobj},function(err1,re
 		res.send({"status":"error","msg":"user doesnot exists."});
 	}
 });
+
+}else{
+	res.send({"status":"error","msg":"user id is missing"});
     //res.send({"status":"success","msg":"mobile number send successfully"});
+}
 }
 
 // updating driver info when he register with Facebook or Gmail
 
 function driverdetails(req,res,next){
 	var data = req.body;
-	if(data.phonenumber){
+	if(data.phonenumber&&data.licenceId&&data.vnumber&&data.ctype){
 		var usertype = data.usertype;
+		var phoneReg = new RegExp("^(0|\+91)?[789]\d{9}$");
+		if(phoneReg.test()){
 		data.mconfid = Math.random().toString(36).substr(2,4);
 		db.collection("user").findOne({"phonenumber":data.phonenumber},function(err,result){
 			if(err){
@@ -437,7 +518,7 @@ function driverdetails(req,res,next){
 						}else{
 							 var messagetext = "Please confirm your mobile number by entering "+data.mconfid+"."+"To continue verification process";
      		 	 var mobilenumber = data.phonenumber; 
-     		 	 message(mobilenumber,messagetext,function(err2,messageResult){
+     		 	 sms(mobilenumber,messagetext,function(err2,messageResult){
      		 	 	if(err2){
      		 	 		console.log(err2);
      		 	 		res.send({"status":"error","msg":"message sending failed"});
@@ -450,8 +531,11 @@ function driverdetails(req,res,next){
 				}
 			}
 		})
+}else{
+			res.send({"status":"error","msg":"user already confirmed his mobile number."});
+		}
 	}else{
-		res.send({"status":"error","msg":"please enter mobilenumber"});
+		res.send({"status":"error","msg":"driver licenceid or vehicle number or vehicle type or mobile number is missing"});
 	}
 }
 
@@ -459,6 +543,7 @@ function driverdetails(req,res,next){
 
 function confirmemail(req,res,next){
 var data = req.body;
+if(data._id){
 db.collection("user").findOne({"_id":data._id},function(err,result1){
 	if(err){
 		res.send({"status":"error","msg":"error while getting userinfo"});
@@ -480,7 +565,7 @@ db.collection("user").findOne({"_id":data._id},function(err,result1){
      		optionaldata.html = html;//"conform mail by click <a href="+passeddata.conformationlink+">here</a>";//html;
      		optionaldata.subject = "You missed last time.Registartion Conformation mail";
 
-     		 mail(optionaldata,function(err,success){
+     		 email(optionaldata,function(err,success){
      		 	if(err){
      		 		res.send({"status":"error","msg":"mail sending to user is failed"});
      		 	}else{
@@ -496,6 +581,10 @@ db.collection("user").findOne({"_id":data._id},function(err,result1){
 		res.send({"status":"error","msg":"user does not exists."});
 	}
 });
+}else{
+	res.send({"status":"error","msg":"user id is missing"});
+    //res.send({"status":"success","msg":"mobile number send successfully"});
+}
 
 }
 
@@ -506,7 +595,7 @@ var loginAuditInfo = req.body;
 console.log(loginAuditInfo);
 if((loginAuditInfo.user_id)&&(loginAuditInfo.location_id)){
 	loginAuditInfo._id = uuid.v4();
-loginAuditInfo.datetime = moment.utc().format('YYYY-MM-DDTHH:mm:ss');
+loginAuditInfo.datetime = moment.utc().format();// 'YYYY-MM-DDTHH:mm:ss'
 db.collection("login_audit").insert(loginAuditInfo,function(err,result){
 if(err){
 res.send({"status":"error","msg":"Login info storing failed."});
@@ -515,7 +604,7 @@ res.send({"status":"success","msg":"Record updated successfully."});
 }
 });
 }else{
-	res.send({"status":"error","msg":"Required fields are missing"});
+	res.send({"status":"error","msg":"userid or location id fields are missing"});
 }
 }
 

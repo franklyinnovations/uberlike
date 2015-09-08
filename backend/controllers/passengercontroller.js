@@ -3,6 +3,7 @@ module.exports = (function(){
 var uuid = require('node-uuid');
 var moment = require('moment');
 var async = require('async');
+var validator = require('validator');
 
 
 	function searchedlocation(req,res,next){
@@ -26,7 +27,7 @@ var async = require('async');
 		var data = req.body;
 		if((data)&&(data.user_id)&&(data.fulladdress)&&(data.location)){
 			data._id = uuid.v4();
-			data.time = moment.utc().format('YYYY-MM-DDTHH:mm:ss'); 
+			data.time = moment.utc().format(); // YYYY-MM-DDTHH:mm:ssZ 
 			db.collection("location").findOne({"location":data.location},function(err,result){
 				if(err){
 					res.send({"status":"error","msg":"Error while getting info"});
@@ -80,19 +81,27 @@ var async = require('async');
 	 	var fromLocation = req.body;
 	 	if((fromLocation)&&(fromLocation.coordinates)){
 	 		var distance = fromLocation.distance || 4;
-	 		var withInTime = moment.utc().add(5, 'minutes').format('YYYY-MM-DDTHH:mm:ss');
+	 	 //	var withInTime = moment.utc().add(5, 'minutes').format('YYYY-MM-DDTHH:mm:ss');
+	 	 var taxiResults = [];
+	 	 	var moreTime = moment.utc().subtract('5','minutes').format(); // YYYY-MM-DDTHH:mm:ssZ
 	 		db.collection("locations").find({"location" : { $nearSphere : fromLocation.coordinates, $maxDistance: (distance/6371) }}).toArray(function(err,results){
 	 			 if(err){
 	 			 	 res.send({"status":"error","msg":"Error while getting location information"});
 	 			 }else if((results)&&(results.length)){
 	 			 	var locationWiseTaxies = [];
 	 			 	  async.each(results,function(eachLocation,callback){
-	 			 	  	db.collection("taxi_location").find({"location_id":eachLocation._id,"isOccupied":false,"date_time": { $lte: withInTime }}).toArray(function(err2,taxiResult){
+	 			 	  	db.collection("taxi_location").find({"location_id":eachLocation._id,"isOccupied":false,"date_time": { $gte:moreTime }}).toArray(function(err2,taxiResult){
 	 			 	  		if(err2){
 	 			 	  			callback(err2,null);
 	 			 	  		}else{
+	 			 	  			console.log(taxiResult);
 	 			 	  			if((taxiResult)&&(taxiResult.length)){
 	 			 	  				eachLocation.taxies = taxiResult;
+	 			 	  				console.log(eachLocation);
+	 			 	  	 //			taxiResuts.push(eachLocation);
+	 			 	  	 			taxiResults.push(eachLocation);
+	 			 	  			console.log("coming here to if condition");
+	 			 	  			 //	console.log(taxiResult);
 	 			 	  			callback(null,eachLocation);
 	 			 	  		}else{
 	 			 	  			callback(null,null);
@@ -103,7 +112,8 @@ var async = require('async');
 	 			 	  	if(err1){
 	 			 	  		res.send({"status":"error","msg":"error while getting the taxies"});
 	 			 	  	}else{
-	 			 	  		res.send({"status":"success","taxies":eachResult});
+	 			 	  		// eachResult = eachResult || [];
+	 			 	  		res.send({"status":"success","taxies":taxiResults});
 	 			 	  	}
 	 			 	  });
 	 			 }else{

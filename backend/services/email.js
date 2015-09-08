@@ -2,8 +2,9 @@ var nodemailer = require('nodemailer');
 
 module.exports = function sendEmail(options,callback) {
 
-    var transporter = nodemailer.createTransport({
+    var transporter = nodemailer.createTransport('SMTP',{
         service: 'Gmail',
+        port:25,
         auth: {
             user: 'titaniumstudio0@gmail.com',
             pass: '92901529'

@@ -12,8 +12,13 @@ var routes = require('./routes/index');
 var users = require('./routes/users');
 var passengers = require('./routes/passengers');
 var drivers = require('./routes/drivers');
-mail = require("./routes/mail");
-message = require('./routes/message');
+
+//mail = require("./routes/mail");
+//message = require('./routes/message');
+
+email = require("./services/email");
+sms = require("./services/sms");
+
 app = express();
 
 // view engine setup

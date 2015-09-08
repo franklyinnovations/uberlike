@@ -2,6 +2,7 @@ module.exports = (function(){
 
 var uuid = require('node-uuid');
 var moment = require('moment');
+var validator = require('validator');
 
 	function setstatus(req,res,next){
 	var data = req.body;
@@ -13,7 +14,7 @@ var moment = require('moment');
 		}
 	data._id = uuid.v4();
 
-	data.datetime = moment.utc().format('YYYY-MM-DD HH:mm:ss');
+	data.datetime = moment.utc().format(); // 'YYYY-MM-DD HH:mm:ssZ'
 
 	db.collection("drivers").insert(data,function(err,result){
 		if(err){
@@ -36,7 +37,7 @@ var moment = require('moment');
 	 				res.send({"status":"success2","msg":"location already exists"});
 	 			}else{
 	 				data._id = uuid.v4();
-	 				data.currenttime = moment.utc().format('YYYY-MM-DDTHH:mm:ss');
+	 				data.currenttime = moment.utc().format(); // 'YYYY-MM-DDTHH:mm:ssZ'
 	 				db.collection("location").insert(data,function(err1,result1){
 	 					if(err1){
 	 						res.send({"status":"error","msg":"Error while inserting"});
@@ -55,7 +56,7 @@ var moment = require('moment');
 	 	var taxiLocationObj = req.body;
 	 	if((taxiLocationObj)&&(taxiLocationObj.driver_id)&&(taxiLocationObj.location_id)){
 	 		taxiLocationObj._id = uuid.v4();
-	 		taxiLocationObj.date_time = moment.utc().format('YYYY-MM-DDTHH:mm:ss');
+	 		taxiLocationObj.date_time = moment.utc().format(); // YYYY-MM-DDTHH:mm:ssZ
 	 		taxiLocationObj.isOccupied = (taxiLocationObj.isOccupied)?taxiLocationObj.isOccupied:false;
 	 		db.collection("taxi_location").insert(taxiLocationObj,function(err,result){
 	 			if(err){

@@ -60,7 +60,14 @@ app.config(['$routeProvider',
             console.log("sample obj is");
             console.log($cookieStore.get('sampleobj'));
             */
+            $rootScope.login_status = ($cookieStore.get('login'))?true:false;
+
+       //     $rootScope.loginStatus = ($rootScope.loginStatus + 1) || 1;
+         
+            console.log("Login Status:"+$rootScope.login_status);
+
             console.log($cookieStore.get('user'));
+
             if($cookieStore.get('user')){
                 $rootScope.userinfo =  $cookieStore.get('user') || {};
             }
@@ -72,10 +79,14 @@ app.config(['$routeProvider',
            var url = next.$$route.originalPath;
            console.log(url);
 
-          /*
+          
            if(($rootScope.userinfo)&&($rootScope.userinfo._id)&&($rootScope.userinfo.phonenumber)&&($rootScope.userinfo.confirm)&&($rootScope.userinfo.mconfirm)){
            // based on usertype you can redirect to which dashboard.
-            $location.path("/dashboard");
+           if($rootScope.userinfo.usertype == "P"){
+                $location.path("/dashboard");
+           }else{
+                $location.path("driverdashboard");
+           }
            }else if(!(($rootScope.userinfo)&&($rootScope.userinfo._id))){
             $location.path("/");
            }else if(!($rootScope.userinfo.confirm)){
@@ -88,7 +99,7 @@ app.config(['$routeProvider',
            }else{
             $location.path("/login");
            }
-           */
+           
 
             if(url == '/mobileconfirm' || url == '/mobilenum'){ // || url == '/dashboard'
                 if($rootScope.userinfo._id){

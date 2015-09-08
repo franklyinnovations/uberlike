@@ -2,28 +2,38 @@ app.factory("Data", ['$http',
     function ($http) { 
 
         var serviceBase = 'http://localhost:3000';
+        var jsonData = {};
 
-        var obj = {};
-        obj.get = function (q) {
-            return $http.get(serviceBase + q).then(function (results) {
-                return results.data;
-            });
-        };
-        obj.post = function (q, object) {
-            return $http.post(serviceBase + q, object).then(function (results) {
-                return results.data;
-            });
-        };
-        obj.put = function (q, object) {
-            return $http.put(serviceBase + q, object).then(function (results) {
-                return results.data;
-            });
-        };
-        obj.delete = function (q) {
-            return $http.delete(serviceBase + q).then(function (results) {
+        jsonData.get = function (query) {
+            return $http.get(serviceBase + query).then(function (results) {
                 return results.data;
             });
         };
 
-        return obj;
+        jsonData.post = function (query, object) {
+            return $http.post(serviceBase + query, object).then(function (results) {
+                return results.data;
+            });
+        };
+
+        jsonData.put = function (query, object) {
+            return $http.put(serviceBase + query, object).then(function (results) {
+                return results.data;
+            });
+        };
+
+        jsonData.delete = function (query) {
+            return $http.delete(serviceBase + query).then(function (results) {
+                return results.data;
+            });
+        };
+
+        jsonData.getService = function(url){
+
+            return $http.get(url).then(function(results){
+                 return results.data;
+            });
+        }
+
+        return jsonData;
 }]);

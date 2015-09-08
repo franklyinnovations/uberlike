@@ -33,6 +33,7 @@ app.controller('authCtrl', function ($scope, $rootScope, $routeParams, $location
             }
         });
     };
+    
     $scope.signup = {email:'',password:'',username:'',phonenumber:''};
     $scope.signUp = function (customer) {
         if(customer.licenceId){
@@ -114,6 +115,11 @@ app.controller('authCtrl', function ($scope, $rootScope, $routeParams, $location
         var customer = {};
          customer._id = $rootScope.userinfo._id;
         customer.phonenumber = data.mobilenumber;
+        if($scope.passenger){
+            customer.usertype = "P";
+        }else{
+            customer.usertype = "D";
+        }
         console.log(customer);
         Data.post('/update/mobilenumber',
             customer
@@ -137,9 +143,9 @@ app.controller('authCtrl', function ($scope, $rootScope, $routeParams, $location
          customer._id = $rootScope.userinfo._id;
          customer.phonenumber = data.mobilenumber;
         if($scope.passenger){
-            customer.usertype= "P"
+            customer.usertype= "P";
         }else{
-            customer.usertype = "D"
+            customer.usertype = "D";
         }
         console.log(customer);
         Data.post('/update/driverdetails',
