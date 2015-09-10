@@ -26,6 +26,9 @@ $scope.initAutocomplete = function () {
     zoomControl: false,
     streetViewControl: false
   });
+      directionsDisplay = new google.maps.DirectionsRenderer;
+   directionsService = new google.maps.DirectionsService;
+   directionsDisplay.setMap($scope.map);
   //map.setCenter({lat: -34.397, lng: 150.644});
   fromAutocomplete = new google.maps.places.Autocomplete(
       (document.getElementById('fromAddress'))
@@ -62,24 +65,27 @@ var pointPlace = function() {
   $scope.fromAddress = $scope.fullname;
   console.log(pos);
   console.log($scope.fulladdress);
-  $scope.setLocation($scope.search_position.dest_lat,$scope.search_position.dest_lng,$scope.toAddress,false);
+  $scope.setLocation($scope.search_position.dest_lat,$scope.search_position.dest_lng,$scope.fulladdress,true);
  // $scope.fromMarker(null);
  $scope.fromMarker.setMap(null);
   $scope.fromMarker = setMarker(pos,"Your location");
-  var data1 = {};
+/* 
+ var data1 = {};
  // data.fulladdress = $scope.fulladdress;
   data1.fulladdress = $scope.fulladdress;
- /* 
+*/ /* 
       { 
         type : "Point" ,
         coordinates : [ <longitude> , <latitude> ] 
         }
                                 */
+/*
   data1.location = {
       type : "Point" ,
       coordinates : [ $scope.search_position.dest_lng , $scope.search_position.dest_lat ] 
   };
   data1.user_id = $rootScope.userinfo._id;
+  */
 
   //  $scope.updateLocation(data1);
 
@@ -111,14 +117,14 @@ var pointPlace = function() {
     if((results)&&(results.status == "OK")&&(results.results[0])&&(results.results[0].formatted_address)){
       console.log("I am from ok block");
       console.log("from addr:"+results.results[0].formatted_address);
-      $scope.fromAddress = results.results[0].formatted_address;   
+     $scope.fulladdress  = results.results[0].formatted_address;   
       console.log("I am from driver values");
       console.log(driver);
       if(!driver){
       
     //  $scope.setLocation(lat,lng,$scope.fromAddress,from);
       } 
-      $scope.setLocation(lat,lng,$scope.fromAddress,from);
+      $scope.setLocation(lat,lng,$scope.fulladdress,from);
       /*if(location._id){
          console.log("Location setting successfully");     
    }else{
@@ -126,7 +132,7 @@ var pointPlace = function() {
       }*/
       //return $scope.fromAddress;
     }else{
-      $scope.fromAddress = "";
+      $scope.fulladdress = "";
       alert("failed to get location name");
   //   return "";
     }
@@ -163,6 +169,7 @@ $scope.setLocation = function(lat,lng,address,from){
          if(from){
           $scope.location = results.location;
           $scope.fromLocation = $scope.location;
+          $scope.fromAddress = address;
      console.log("I am from from");
      if(!($rootScope.login_status)) {
       $scope.location = results.location;
@@ -173,6 +180,7 @@ $scope.setLocation = function(lat,lng,address,from){
      }
 
   }else{
+    $scope.toAddress = address;
     $scope.toLocation = results.location;
     console.log("I am from to");
   }
@@ -197,6 +205,7 @@ var setMarker = function(pos,title){
  // google.maps.Animation.BOUNCE
  $scope.marker.setAnimation(google.maps.Animation.BOUNCE);
  return $scope.marker;
+ 
 }
 
 $scope.updateLocation = function(location){
@@ -488,7 +497,7 @@ Data.post('/passengers/avilabletaxies',passengerSearch).then(function(results){
 if(results.status == "success"){
   console.log(results);
 
-  $scope.toMarker = setMarker(pos,'Your searched location.');
+ // $scope.toMarker = setMarker(pos,'Your searched location.');
   for(var i = 0;i < results.taxies.length ;i++){
     var coordinates = results.taxies[i].location.coordinates;
     var driverPosition = {};
@@ -503,35 +512,23 @@ if(results.status == "success"){
 });
 var start = new google.maps.LatLng(pos.lat,pos.lng);
  var end = new google.maps.LatLng(destination.lat,destination.lng);
-   directionsDisplay = new google.maps.DirectionsRenderer();
-   directionsService = new google.maps.DirectionsService();
+ console.log("from:"+$scope.fromAddress);
+ console.log("to:"+$scope.toAddress);
+ $scope.fromMarker.setMap(null);
+ //$scope.fromMarker.setMap(null);
 directionsService.route({
-       origin:start,
-       destination: end,
+       origin: $scope.fromAddress, //start,//data.from,//
+       destination: $scope.toAddress, // end,// data.destination,
        travelMode: google.maps.TravelMode.DRIVING
          }, function(resultdata, status) {
           console.log(resultdata);
            if (status == google.maps.DirectionsStatus.OK) {
-         
-            /*
-            var line = new google.maps.Polyline({
-    path: [new google.maps.LatLng(pos.lat,pos.lng), new google.maps.LatLng(destination.lat,destination.lng)],
-    strokeColor: "#FF0000",
-    strokeOpacity: 1.0,
-    strokeWeight: 10,
-    geodesic: true,
-    map: $scope.map
-});
-*/
-
              directionsDisplay.setDirections(resultdata);
-         //     directionsDisplay.setMap($scope.map);
+              
            }else{
             alert("Failed to get google maps direction");
            }
 
          });  
-
 }
-
 });

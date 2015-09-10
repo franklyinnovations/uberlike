@@ -6,16 +6,16 @@ var async = require('async');
 var validator = require('validator');
 
 
-	function searchedlocation(req,res,next){
-	var data = req.body;
-	if((data)&&(data.user_id)&&(data.present_lat)&&(data.present_lng)&&(data.dest_lat)&&(data.dest_lng)&&(data.time)){
-		data._id = uuid.v4();
-		data.date = moment().format('YYYY-MM-DD'); // HH:mm:ss
-		db.collection("passengers").insert(data,function(err,result){
+	function searchedLocations(req,res,next){
+	var locationData = req.body;
+	if((locationData)&&(locationData.user_id)&&(locationData.present_lat)&&(locationData.present_lng)&&(locationData.dest_lat)&&(locationData.dest_lng)&&(locationData.time)){
+		locationData._id = uuid.v4();
+		locationData.date = moment().format('YYYY-MM-DD'); // HH:mm:ss
+		db.collection("passengers").insert(locationData,function(err,result){
 			if(err){
-				res.send({"status":"error","msg":"Error while inserting user data"});
+				res.send({"status":"error","msg":"Error while inserting user location."});
 			}else{
-				res.send({"status":"success","msg":"Successfully updated the searching details","passenger":data});
+				res.send({"status":"success","msg":"Successfully updated the searching details","passenger":locationData});
 			}
 		});
 	}else{
@@ -23,22 +23,22 @@ var validator = require('validator');
 	}
 }
 
-	function savelocation(req,res,next){
-		var data = req.body;
-		if((data)&&(data.user_id)&&(data.fulladdress)&&(data.location)){
-			data._id = uuid.v4();
-			data.time = moment.utc().format(); // YYYY-MM-DDTHH:mm:ssZ 
-			db.collection("location").findOne({"location":data.location},function(err,result){
+	function saveUserLocation(req,res,next){
+		var locationData = req.body;
+		if((locationData)&&(locationData.user_id)&&(locationData.fulladdress)&&(locationData.location)){
+			locationData._id = uuid.v4();
+			locationData.time = moment.utc().format(); // YYYY-MM-DDTHH:mm:ssZ 
+			db.collection("location").findOne({"location":locationData.location},function(err,result){
 				if(err){
 					res.send({"status":"error","msg":"Error while getting info"});
 				}else if(result){
 					res.send({"status":"success2","msg":"Location already exists"});
 				}else{
-					db.collection("location").insert(data,function(err,results){
+					db.collection("location").insert(locationData,function(err,results){
 						if(err){
 							res.send({"status":"error","msg":"Error while updating location"});
 						}else{
-							res.send({"status":"success","data":data});
+							res.send({"status":"success","data":locationData});
 						}
 					});
 				}
@@ -70,7 +70,7 @@ var validator = require('validator');
 			});
 			
 		}else{
-			res.send({"status":"error","msg":"Some fields are missing"});
+			res.send({"status":"error","msg":"Location or address is missing."});
 		}
 	}
 
@@ -88,6 +88,8 @@ var validator = require('validator');
 	 			 if(err){
 	 			 	 res.send({"status":"error","msg":"Error while getting location information"});
 	 			 }else if((results)&&(results.length)){
+	 			 	console.log("coming to results");
+	 			 	console.log(results);
 	 			 	var locationWiseTaxies = [];
 	 			 	  async.each(results,function(eachLocation,callback){
 	 			 	  	db.collection("taxi_location").find({"location_id":eachLocation._id,"isOccupied":false,"date_time": { $gte:moreTime }}).toArray(function(err2,taxiResult){
@@ -128,8 +130,8 @@ var validator = require('validator');
 
 
 	return {
-		searchedlocation:searchedlocation,
-		savelocation:savelocation,
+		searchedLocations:searchedLocations,  // searchedlocation
+		saveUserLocation:saveUserLocation,    // savelocation
 		setLocation:setLocation,
 		findNearTaxies:findNearTaxies
 	}

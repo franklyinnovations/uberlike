@@ -8,7 +8,7 @@ router.get('/', function(req, res, next) {
     res.send({"status":"error","msg":"I am from users"});
 });
 
-router.post('/setdefault/status',drivercontroller.setstatus);
+router.post('/setdefault/status',drivercontroller.setStatus);
 
 router.post('/taxilocation',drivercontroller.saveTaxiLocation);
 

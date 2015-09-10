@@ -1,9 +1,9 @@
 var express = require('express');
 var uuid = require('node-uuid');
 var md5 = require('md5');
-var FacebookStrategy = require('passport-facebook').Strategy;
+//var FacebookStrategy = require('passport-facebook').Strategy;
 //var GoogleStrategy = require( 'passport-google-oauth2' ).Strategy;
-var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;//OAuthStrategy;
+//var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;//OAuthStrategy;
 var twilio = require('twilio');
 
 var router = express.Router();
@@ -28,11 +28,13 @@ if(moment.utc().format('YYYY-MM-DD HH:mm:ss')<=moment.utc().add(4, 'hours').form
  */
 //
 
+/*
 var FACEBOOK_APP_ID = "1033910573287452";
 var FACEBOOK_APP_SECRET = "62c751aa570cae0e94e092c8b4e8449f";
 
 var GOOGLE_CLIENT_ID = "900607789971-n6h2130p69shrh3sjmn6cmq5e960hldf.apps.googleusercontent.com";
 var GOOGLE_CLIENT_SECRET = "Y0Z0jk99lgfiEpljUga7stPr";
+*/
 
 var accountSid = "ACf678f8a1909b0f5c04df81e42e4af2fc";   //"AC3135929726be140536b50485c60057e7";
 var authToken = "837d2b93452b137288ee26bfb82c75d1" ;    //"2ba7d45082ef1ddf1d90993d4e7463a2";
@@ -53,95 +55,33 @@ router.get('/', function(req, res, next) {
 
 router.get('/controle',useroperations.controle);
 
-passport.use(new FacebookStrategy({
-    clientID: FACEBOOK_APP_ID,
-    clientSecret: FACEBOOK_APP_SECRET,
-    callbackURL: "http://localhost/auth/facebook/callback",
-    profileFields : ['emails','name'], // , 'first_name', 'last_name'
-    enableProof: true//false
-  },
-  function(accessToken, refreshToken, profile,done) {
-    console.log(profile);
-	  return done(null, profile);
-  }
-));
-
-router.get('/auth/facebook',
-		  passport.authenticate('facebook',{ scope: ['email'] }));
-router.get('/auth/facebook/callback',
-		  passport.authenticate('facebook', { failureRedirect: '/auth/facebook' }),
-		  function(req, res) {
-		    // Successful authentication, redirect home.
-		    useroperations.checkuserinfo(req.user,res);
-
-		    //res.send({"success":"facebook login success"});
-		  });
-
-/*
-passport.use(new GoogleStrategy({
-    clientID:     GOOGLE_CLIENT_ID,
-    clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: "http://127.0.0.1:3000/auth/google/callback",
-    passReqToCallback   : true
-  },
-  function(request, accessToken, refreshToken, profile, done) {
-    console.log(profile);
-      return done(null, profile);
-  }
-));
-*/
-passport.use(new GoogleStrategy({
-	clientID: GOOGLE_CLIENT_ID,
-    clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: "http://localhost/auth/google/callback"
-  },
-  function(accessToken, refreshToken, profile, done){
-   // console.log(profile);
-    //userhandling(profile)
-	  return done(null, profile);
-  }
-));
 
 
-router.get('/auth/google',
-		  passport.authenticate('google',{ scope: ['https://www.googleapis.com/auth/plus.login','https://www.googleapis.com/auth/plus.profile.emails.read'] })); // { scope: 'https://www.google.com/m8/feeds' }
-
-router.get('/auth/google/callback', 
-		  passport.authenticate('google', { failureRedirect: '/auth/google' }),
-		  function(req, res) {
-		    // Successful authentication, redirect home.
-		   console.log("i am from call back data");
-		    //console.log(req.user);
-		    useroperations.checkuserinfo(req.user,res);
-		  //  useroperations.userhandling(req.user,res);
-		  //  res.send({"success": "google login success"});
-		  }); 
-
-router.post("/insertuser",useroperations.insertuser);
+router.post("/insertuser",useroperations.insertUsers); // insertuser
 
 router.post("/login/passenger",useroperations.login);	
 
-router.post("/forgotpassword",useroperations.forgotpassword); 
+router.post("/forgotpassword",useroperations.forgotPassword); // forgotpassword 
 
-router.get('/conf/user/:confirmid',useroperations.emailconfirmation);
+router.get('/conf/user/:confirmid',useroperations.emailConfirmation);
 
-router.post('conf/email',useroperations.emailconfirmation);
+router.post('conf/email',useroperations.emailConfirmation);   // emailconfirmation
 
-router.get('/resetpwd/:tpassword',useroperations.resetpage);
+router.get('/resetpwd/:tpassword',useroperations.resetPage);  // resetpage
 
 router.post('/save/loginaudit',useroperations.loginAuditInsert);
 
- // router.post('/confirm/email/resend',useroperations.confirmemail);
+ // router.post('/confirm/email/resend',useroperations.resendConfEmail);     // confirmemail
 
-//router.post('/confirm/mobile/resend',useroperations.mesgsend);
+//router.post('/confirm/mobile/resend',useroperations.resendMobileConfCode); // mesgsend
 
-router.post('/update/mobilenumber',useroperations.updatemobilenum);
+router.post('/update/mobilenumber',useroperations.updateMobileNumber); // updatemobilenum
 
-router.post('/update/driverdetails',useroperations.driverdetails);
+router.post('/update/driverdetails',useroperations.updateDriverDetails); // driverdetails
 
-router.post('/verify/mobile',useroperations.verifymobile);
+router.post('/verify/mobile',useroperations.verifyMobileNumber);  // verifymobile
 
-router.post('/reset/password',useroperations.resetpasswd);
+router.post('/reset/password',useroperations.resetPasswd); // resetpasswd
 
 /*
 function sendemail(options,callback){

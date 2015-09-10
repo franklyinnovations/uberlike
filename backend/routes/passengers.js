@@ -8,9 +8,9 @@ router.get('/', function(req, res, next) {
     res.send({"status":"error","msg":"I am from users"});
 });
 
-router.post('/search/destination',passengercontroller.searchedlocation);
+router.post('/search/destination',passengercontroller.searchedLocations);
 
-router.post('/savesearch',passengercontroller.savelocation);
+router.post('/savesearch',passengercontroller.saveUserLocation);
 
 router.post('/setlocation',passengercontroller.setLocation);
 

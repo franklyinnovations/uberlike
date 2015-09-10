@@ -127,6 +127,7 @@ app.controller('authCtrl', function ($scope, $rootScope, $routeParams, $location
             if(results.status == "success"){
                 console.log(results);
                 $rootScope.userinfo.phonenumber = customer.phonenumber;
+                $rootScope.userinfo.usertype = customer.usertype;
                 alert(results.msg);
                 $cookieStore.put('user',$rootScope.userinfo);
                 $location.path('mobileconfirm');

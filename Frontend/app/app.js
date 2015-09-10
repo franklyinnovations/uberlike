@@ -44,6 +44,11 @@ app.config(['$routeProvider',
                 templateUrl:'partials/mobileConfirm.html',
                 controller:'authCtrl'
             })
+             .when('/maplocations',{
+              title:'map sample locations',
+              templateUrl:'partials/mapLocations.html',
+              controller:'mapCtrl'
+            })
             .when('/mobilenum',{
                 title:'Mobile Number',
                 templateUrl:'partials/mobileNum.html',
@@ -78,9 +83,13 @@ app.config(['$routeProvider',
       //      console.log(userobj);
            var url = next.$$route.originalPath;
            console.log(url);
+           /*
+           if(url == "/maplocations"){
 
-          
-           if(($rootScope.userinfo)&&($rootScope.userinfo._id)&&($rootScope.userinfo.phonenumber)&&($rootScope.userinfo.confirm)&&($rootScope.userinfo.mconfirm)){
+           } 
+           */
+           /*
+           else if(($rootScope.userinfo)&&($rootScope.userinfo._id)&&($rootScope.userinfo.phonenumber)&&($rootScope.userinfo.confirm)&&($rootScope.userinfo.mconfirm)){
            // based on usertype you can redirect to which dashboard.
            if($rootScope.userinfo.usertype == "P"){
                 $location.path("/dashboard");
@@ -99,6 +108,7 @@ app.config(['$routeProvider',
            }else{
             $location.path("/login");
            }
+           */
            
 
             if(url == '/mobileconfirm' || url == '/mobilenum'){ // || url == '/dashboard'

@@ -109,6 +109,7 @@ function calculateAndDisplayRoute(directionsService, directionsDisplay) {
     travelMode: google.maps.TravelMode.DRIVING
   }, function(response, status) {
     if (status === google.maps.DirectionsStatus.OK) {
+      console.log(response);
       directionsDisplay.setDirections(response);
     } else {
       window.alert('Directions request failed due to ' + status);

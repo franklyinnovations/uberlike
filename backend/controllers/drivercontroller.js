@@ -4,45 +4,45 @@ var uuid = require('node-uuid');
 var moment = require('moment');
 var validator = require('validator');
 
-	function setstatus(req,res,next){
-	var data = req.body;
-	if((data)&&(data.user_id)&&(data.loc_lat)&&(data.loc_lng)){
-		if(data.occupied){
-			data.occupied = 1;
+	function setStatus(req,res,next){
+	var driverInfo = req.body;
+	if((driverInfo)&&(driverInfo.user_id)&&(driverInfo.loc_lat)&&(driverInfo.loc_lng)){
+		if(driverInfo.occupied){
+			driverInfo.occupied = 1;
 		}else{
-			data.occupied = 0;
+			driverInfo.occupied = 0;
 		}
-	data._id = uuid.v4();
+	driverInfo._id = uuid.v4();
 
-	data.datetime = moment.utc().format(); // 'YYYY-MM-DD HH:mm:ssZ'
+	driverInfo.datetime = moment.utc().format(); // 'YYYY-MM-DD HH:mm:ssZ'
 
-	db.collection("drivers").insert(data,function(err,result){
+	db.collection("drivers").insert(driverInfo,function(err,result){
 		if(err){
-			res.send({"status":"error","msg":"Error while inserting the user data"});
+			res.send({"status":"error","msg":"Error while inserting the user."});
 		}else{
-			res.send({"status":"success","msg":"Status setting success","ddetails":data});
+			res.send({"status":"success","msg":"Status setting success","ddetails":driverInfo});
 		}
 	});
 }else{
        res.send({"status":"error","msg":"One or more fields are missing"});
 }
 }
-	 function savelocation(req,res,next){
-	 	var data = req.body;
-	 	if((data)&&(data.location)&&(data.fulladdress)){
-	 		db.collection("location").findOne({location:data.location},function(err,result){
+	 function saveLocation(req,res,next){
+	 	var locationInfo = req.body;
+	 	if((locationInfo)&&(locationInfo.location)&&(locationInfo.fulladdress)){
+	 		db.collection("location").findOne({location:locationInfo.location},function(err,result){
 	 			if(err){
 	 				res.send({"status":"error","msg":"Error while getting user info"});
 	 			}else if(result){
 	 				res.send({"status":"success2","msg":"location already exists"});
 	 			}else{
-	 				data._id = uuid.v4();
-	 				data.currenttime = moment.utc().format(); // 'YYYY-MM-DDTHH:mm:ssZ'
-	 				db.collection("location").insert(data,function(err1,result1){
+	 				locationInfo._id = uuid.v4();
+	 				locationInfo.currenttime = moment.utc().format(); // 'YYYY-MM-DDTHH:mm:ssZ'
+	 				db.collection("location").insert(locationInfo,function(err1,result1){
 	 					if(err1){
 	 						res.send({"status":"error","msg":"Error while inserting"});
 	 					}else{
-	 						res.send({"status":"success","data":data});
+	 						res.send({"status":"success","data":locationInfo});
 	 					}
 	 				});
 	 			}
@@ -71,8 +71,8 @@ var validator = require('validator');
 	 }
 
 	 return {
-	 	setstatus:setstatus,
-	 	savelocation:savelocation,
+	 	setStatus:setStatus,
+	 	saveLocation:saveLocation,
 	 	saveTaxiLocation:saveTaxiLocation
 	 }
 

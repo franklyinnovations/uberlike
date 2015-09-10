@@ -12,6 +12,7 @@ var routes = require('./routes/index');
 var users = require('./routes/users');
 var passengers = require('./routes/passengers');
 var drivers = require('./routes/drivers');
+var login = require('./services/login');
 
 //mail = require("./routes/mail");
 //message = require('./routes/message');
@@ -66,6 +67,7 @@ passport.serializeUser(function(user, done) {
 	
 
 app.use('/', routes);
+app.use('/',login);
 app.use('/users', users);
 app.use('/drivers',drivers);
 app.use('/passengers',passengers);
