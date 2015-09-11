@@ -11,6 +11,7 @@ $scope.interval;
 $scope.marker;
 $scope.toMarker;
 $scope.fromMarker;
+$scope.markers = [];
 $scope.fromLocation = {};
 $scope.toLocation = {};
 var directionsDisplay;  // new google.maps.DirectionsRenderer();
@@ -59,15 +60,17 @@ var pointPlace = function() {
   var pos = {};
   pos.lat = place.geometry.location.lat();
   pos.lng = place.geometry.location.lng();
-  $scope.search_position.dest_lat = pos.lat;
-  $scope.search_position.dest_lng = pos.lng;
+  $scope.position.present_lat = pos.lat;
+  $scope.position.present_lng = pos.lng;
+ //  $scope.search_position.dest_lat = pos.lat;
+ // $scope.search_position.dest_lng = pos.lng;
   $scope.fulladdress = place.formatted_address;
-  $scope.fromAddress = $scope.fullname;
+  $scope.fromAddress =   $scope.fulladdress;// $scope.fullname;
   console.log(pos);
   console.log($scope.fulladdress);
   $scope.setLocation($scope.search_position.dest_lat,$scope.search_position.dest_lng,$scope.fulladdress,true);
  // $scope.fromMarker(null);
- $scope.fromMarker.setMap(null);
+  $scope.fromMarker.setMap(null);
   $scope.fromMarker = setMarker(pos,"Your location");
 /* 
  var data1 = {};
@@ -239,8 +242,8 @@ $scope.geolocate = function(isFrom) {
         lng: position.coords.longitude
       };
      
-     $scope.position.present_lat = $scope.geolocation.lat;
-      $scope.position.present_lng = $scope.geolocation.lng;
+   //  $scope.position.present_lat = $scope.geolocation.lat;
+   //   $scope.position.present_lng = $scope.geolocation.lng;
      console.log($scope.geolocation);
      if(!$scope.marker){
     $scope.fromMarker = setMarker($scope.geolocation,"your default location");
@@ -264,8 +267,8 @@ $scope.geolocate = function(isFrom) {
     	$scope.geolocation.lat = parseFloat(this.geoplugin_latitude());
     	$scope.geolocation.lng = parseFloat(this.geoplugin_longitude());
 
-    	$scope.position.present_lat = $scope.geolocation.lat;
-      $scope.position.present_lng = $scope.geolocation.lng;
+    //	$scope.position.present_lat = $scope.geolocation.lat;
+    //  $scope.position.present_lng = $scope.geolocation.lng;
      console.log($scope.geolocation);
      if(!$scope.marker){
       $scope.fromMarker =	setMarker($scope.geolocation,"your default location");
@@ -281,8 +284,8 @@ $scope.geolocate = function(isFrom) {
     $scope.geolocation.lat = parseFloat(this.geoplugin_latitude());
     $scope.geolocation.lng = parseFloat(this.geoplugin_longitude());
 
-    $scope.position.present_lat = $scope.geolocation.lat;
-      $scope.position.present_lng = $scope.geolocation.lng;
+   // $scope.position.present_lat = $scope.geolocation.lat;
+   //   $scope.position.present_lng = $scope.geolocation.lng;
      console.log($scope.geolocation);
      if(!$scope.marker){
       $scope.fromMarker =	setMarker($scope.geolocation,"your default location");
@@ -467,8 +470,8 @@ $scope.setChangeLocation = function(data){
 $scope.saveUserSearch = function(data){
 	var customers = {};
 	customers.user_id = $rootScope.userinfo._id;
-	customers.present_lat = $scope.position.present_lat;
-	customers.present_lng = $scope.position.present_lng;
+	customers.present_lat = $scope.position.present_lat || $scope.geolocation.lat;
+	customers.present_lng = $scope.position.present_lng || $scope.geolocation.lng;
 	customers.dest_lat = $scope.search_position.dest_lat;
 	customers.dest_lng = $scope.search_position.dest_lng;
   	customers.time = data.time;
@@ -492,6 +495,28 @@ $scope.saveUserSearch = function(data){
 		}
 	});
 */
+var routeObj = {};
+routeObj.fromLocation = {
+  "type":"Point",
+  "coordinates":[customers.present_lng,customers.present_lat]
+};
+routeObj.toLocation = {
+  "type":"Point",
+  "coordinates":[customers.dest_lng,customers.dest_lat]
+}
+routeObj.startLocationAddress = $scope.fromAddress;
+routeObj.endLocationAddress = $scope.toAddress;
+
+Data.post('/passengers/saveroute',routeObj).then(function(results){
+if(results.status == "success"){
+  console.log("I am from success");
+  console.log(results);
+}else{
+  console.log("I am from fail block");
+  console.log(results);
+}
+});
+
 Data.post('/passengers/avilabletaxies',passengerSearch).then(function(results){
 // /passengers/avilabletaxies
 if(results.status == "success"){
@@ -510,6 +535,7 @@ if(results.status == "success"){
 }
 
 });
+
 var start = new google.maps.LatLng(pos.lat,pos.lng);
  var end = new google.maps.LatLng(destination.lat,destination.lng);
  console.log("from:"+$scope.fromAddress);
@@ -530,5 +556,92 @@ directionsService.route({
            }
 
          });  
+
+
 }
+
+$scope.findMatchData = function(matchdata){
+        var matchObj = {};
+        var start_lat = $scope.position.present_lat || $scope.geolocation.lat;
+        var start_lng = $scope.position.present_lng || $scope.geolocation.lng;
+        var end_lat = $scope.search_position.dest_lat;
+        var end_lng = $scope.search_position.dest_lng;
+        matchObj.startPosition = {
+          "type":"Point",
+          "coordinates":[parseFloat(start_lng),parseFloat(start_lat)]
+        };
+        matchObj.endPosition = {
+          "type":"Point",
+          "coordinates":[parseFloat(end_lng),parseFloat(end_lat)]
+        };
+        Data.post("/passengers/findmatchroutes",matchObj).then(function(results){
+          if(results.status == "success"){
+            console.log(results);
+          var routes = [];
+          routes = results.routes;
+          $scope.routes = routes;
+          $scope.fromMarker.setMap(null);
+          var markers = [];
+            for (var j = 0; j < $scope.markers.length; j++) {
+      markers[j].setMap(null);
+    }
+          for(var i =0;i<routes.length;i++){
+
+            /* 
+
+            var pos = {
+                    lat :$scope.routes[i].start_location_info.location.coordinates[1],
+                    lng : $scope.routes[i].start_location_info.location.coordinates[0]
+                  }
+
+                  var pos1 = {
+                    lat:$scope.routes[i].end_location_info.location.coordinates[1],
+                    lng:$scope.routes[i].end_location_info.location.coordinates[0]
+                  }
+                  
+                  */
+             
+            directionsService.route({
+       origin: routes[i].start_location_info.full_address, //start,//data.from,//
+       destination: routes[i].end_location_info.full_address, // end,// data.destination,
+       travelMode: google.maps.TravelMode.DRIVING
+         }, function(resultdata, status) {
+          console.log(resultdata);
+           if (status == google.maps.DirectionsStatus.OK) {
+            var rendererOptions = {
+                  preserveViewport: false,//true,         
+                  suppressMarkers: true,//false,//true,
+                  routeIndex:i
+                  };
+
+                  var leg = resultdata.routes[ 0 ].legs[ 0 ];
+                  var pos = leg.start_location;
+                  var pos1 = leg.end_location;
+                        markers.push(new google.maps.Marker({
+      position: pos, 
+      map: $scope.map,
+      icon: "http://maps.google.com/mapfiles/marker" + String.fromCharCode(markers.length + 65) + ".png"
+    })); 
+                    markers.push(new google.maps.Marker({
+      position: pos1, 
+      map: $scope.map,
+      icon: "http://maps.google.com/mapfiles/marker" + String.fromCharCode(markers.length + 65) + ".png"
+    })); 
+
+             matchDirectionsDisplay = new google.maps.DirectionsRenderer(rendererOptions);                
+             matchDirectionsDisplay.setMap($scope.map);
+             matchDirectionsDisplay.setDirections(resultdata);
+           }else{
+            alert("Failed to get google maps direction");
+           }
+         });  
+          }
+          $scope.markers = markers;
+          }else{
+            console.log("failed to get routes");
+            console.log(results);
+          }
+        });
+}
+
 });

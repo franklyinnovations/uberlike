@@ -3,6 +3,7 @@ module.exports = (function(){
 var uuid = require('node-uuid');
 var moment = require('moment');
 var async = require('async');
+var underscore = require('underscore');
 var validator = require('validator');
 
 
@@ -80,19 +81,21 @@ var validator = require('validator');
 	 function findNearTaxies(req,res,next){
 	 	var fromLocation = req.body;
 	 	if((fromLocation)&&(fromLocation.coordinates)){
-	 		var distance = fromLocation.distance || 4;
+	 		var distance = fromLocation.distance || 1; // 10
 	 	 //	var withInTime = moment.utc().add(5, 'minutes').format('YYYY-MM-DDTHH:mm:ss');
 	 	 var taxiResults = [];
 	 	 	var moreTime = moment.utc().subtract('5','minutes').format(); // YYYY-MM-DDTHH:mm:ssZ
-	 		db.collection("locations").find({"location" : { $nearSphere : fromLocation.coordinates, $maxDistance: (distance/6371) }}).toArray(function(err,results){
+	 		db.collection("locations").find({"location" : { $nearSphere : {$geometry: {type : "Point",coordinates : fromLocation.coordinates}, $maxDistance: (distance * 1000) }}}).toArray(function(err,results){
 	 			 if(err){
 	 			 	 res.send({"status":"error","msg":"Error while getting location information"});
 	 			 }else if((results)&&(results.length)){
 	 			 	console.log("coming to results");
-	 			 	console.log(results);
+	 			 	console.log(results);   //  distance/6371
 	 			 	var locationWiseTaxies = [];
 	 			 	  async.each(results,function(eachLocation,callback){
-	 			 	  	db.collection("taxi_location").find({"location_id":eachLocation._id,"isOccupied":false,"date_time": { $gte:moreTime }}).toArray(function(err2,taxiResult){
+
+	 			 	  	//   ,"date_time": { $gte:moreTime }
+	 			 	  	db.collection("taxi_location").find({"location_id":eachLocation._id,"isOccupied":false}).toArray(function(err2,taxiResult){
 	 			 	  		if(err2){
 	 			 	  			callback(err2,null);
 	 			 	  		}else{
@@ -128,12 +131,140 @@ var validator = require('validator');
 	 	}
 	 }
 
+	 function saveRoute(req,res,next){
+	 	var routeInfo = req.body;
+	 	if((routeInfo)&&(routeInfo.fromLocation)&&(routeInfo.toLocation)&&(routeInfo.startLocationAddress)&&(routeInfo.endLocationAddress)){
+	 		async.parallel({
+	 			one:function(callback){
+	 				db.collection("locations").findOne({"location":routeInfo.fromLocation},function(err,result1){
+	 			if(err){
+	 						callback(err,null);
+	 			}else if(result1){
+	 						callback(null,result1);
+	 			}else{
+	 				var locationObj = {};
+	 				locationObj._id = uuid.v4();
+	 				locationObj.location = routeInfo.fromLocation;
+	 				locationObj.full_address = routeInfo.startLocationAddress;
+	 				db.collection("locations").insert(locationObj,function(err1,result2){
+	 					if(err1){
+	 						callback(err1,null);
+	 					}else{
+	 						callback(null,locationObj);
+	 					}
+	 				});
+	 					//	callback(null,null);
+	 				}
+	 		});
+	 			},
+	 			two:function(callback){
+	 					db.collection("locations").findOne({"location":routeInfo.toLocation},function(err,result3){
+	 			if(err){
+	 						callback(err,null);
+	 			}else if(result3){
+	 						callback(null,result3);
+	 			}else{
+	 				 var locationObj = {};
+	 				 locationObj._id = uuid.v4();
+	 				 locationObj.location = routeInfo.toLocation;
+	 				 locationObj.full_address = routeInfo.endLocationAddress;
+	 				 db.collection("locations").insert(locationObj,function(err2,result3){
+	 				 	if(err2){
+	 				 		callback(err2,null);
+	 				 	}else{
+	 				 		callback(null,locationObj);
+	 				 	}
+	 				 });
+	 				   //		callback(null,null);
+	 			}
+	 		});
+	 			}
+
+	 			},function(asyncErr,locationResults){
+	 				if(asyncErr){
+	 					res.send({"status":"error","msg":"error while getting the result"});
+	 				}else if((locationResults)&&(locationResults.one)&&(locationResults.two)){
+	 					var startLocation = locationResults.one._id;
+	 					var endLocation = locationResults.two._id;
+	 					var obj = {};
+	 					obj._id = uuid.v4();
+	 					obj.route_name = "Route From "+routeInfo.startLocationAddress+" to "+routeInfo.endLocationAddress;
+	 					obj.start_location = startLocation;
+	 					obj.end_location = endLocation;
+	 					db.collection("routes").insert(obj,function(err,routeDetails){
+	 						if(err){
+	 							res.send({"status":"error","msg":"error while inserting the route"});
+	 						}else{
+	 							   res.send({"status":"success","route":obj});
+	 						}
+	 					});
+	 				}
+	 			});
+	 		// db.collection("locations").find({"location":fromLocation})
+	 	}else{
+	 		res.send({"status":"error","msg":"some information is missing"});
+	 	}
+	 }
+
+	 function findMatchResult(req,res,next){
+	 	var matchData = req.body;
+	 	var distance = 1;
+
+	 	// {type : "Point",coordinates : matchData.start}
+
+	 	// {type : "Point",coordinates : matchData.end}
+
+	 	if((matchData)&&(matchData.startPosition)&&(matchData.endPosition)){
+
+	 	async.parallel({
+	 		one:function(callback){
+	 			db.collection("locations").find({"location":{ $nearSphere : {$geometry: matchData.startPosition, $maxDistance: (distance * 1000) }}}).toArray(callback)
+	 		},
+	 		two:function(callback){
+	 			db.collection("locations").find({"location":{ $nearSphere : {$geometry: matchData.endPosition, $maxDistance: (distance * 1000) }}}).toArray(callback)
+	 		}
+	 	},function(err,asyncResult){
+	 		if(err){
+	 			console.log(err);
+	 			res.send({"status":"error","msg":"error while getting the location result"});
+	 		}else if((asyncResult)&&(asyncResult.one.length)&&(asyncResult.two.length)){
+	 			var fromLocations = asyncResult.one;
+	 			var toLocations = asyncResult.two;
+	 			var fromLocationIds = underscore.pluck(fromLocations,'_id');
+	 			var toLocationIds = underscore.pluck(toLocations,'_id');
+	 			db.collection("routes").find({"start_location":{"$in":fromLocationIds},"end_location":{"$in":toLocationIds}}).toArray(function(err1,results){
+	 				if(err1){
+	 					res.send({"status":"error","msg":"error while getting the data."});
+	 				}else if(results.length){
+	 					async.eachSeries(results,function(eachResult,callbackone){
+	 						console.log("coming here");
+	 						eachResult.start_location_info = underscore.find(fromLocations, function(obj) { return obj._id == eachResult.start_location });
+	 						eachResult.end_location_info = underscore.find(toLocations,function(obj){ return obj._id == eachResult.end_location });
+	 						callbackone();
+	 					},function(resultsOne){
+	 						res.send({"status":"success","routes":results});
+	 					});
+	 				}else{
+	 					    res.send({"status":"success","routes":[]});
+	 				}
+	 			});
+
+	 		}else{
+	 			res.send({"status":'success',"routes":[]});
+	 		}
+	 	});
+	  }else{
+	  	res.send({"status":"error","msg":"start or end location is missing"});
+	  }
+	 }
 
 	return {
 		searchedLocations:searchedLocations,  // searchedlocation
 		saveUserLocation:saveUserLocation,    // savelocation
 		setLocation:setLocation,
-		findNearTaxies:findNearTaxies
+		findNearTaxies:findNearTaxies,
+		saveRoute:saveRoute,
+		findMatchResult:findMatchResult
 	}
 
 })();

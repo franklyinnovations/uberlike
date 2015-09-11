@@ -62,8 +62,8 @@ var pointPlace = function() {
 }
 
 var insertLocation = function(position){
-	var lat = position.lat;
-	var lng = position.lng;
+	var lat = parseFloat(position.lat);
+	var lng = parseFloat(position.lng);
     var location = {};
   location.full_address = $scope.fulladdress;
   location.location = {type : "Point" ,coordinates :[lng,lat]};
