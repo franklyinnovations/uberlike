@@ -191,13 +191,22 @@ var validator = require('validator');
 	 					obj.route_name = "Route From "+routeInfo.startLocationAddress+" to "+routeInfo.endLocationAddress;
 	 					obj.start_location = startLocation;
 	 					obj.end_location = endLocation;
-	 					db.collection("routes").insert(obj,function(err,routeDetails){
+	 					db.collection("routes").findOne(obj,function(err,routeData){
+	 						if(err){
+	 							res.send({"status":"error","msg":"error while getting the route info"});
+	 						}else if(routeData){
+	 							res.send({"status":"success","route":routeData});
+	 						}else{
+	 							db.collection("routes").insert(obj,function(err,routeDetails){
 	 						if(err){
 	 							res.send({"status":"error","msg":"error while inserting the route"});
 	 						}else{
 	 							   res.send({"status":"success","route":obj});
 	 						}
 	 					});
+	 						}
+	 					})
+	 					
 	 				}
 	 			});
 	 		// db.collection("locations").find({"location":fromLocation})

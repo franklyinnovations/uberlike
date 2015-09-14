@@ -637,6 +637,159 @@ res.send({"status":"success","msg":"Record updated successfully."});
 }
 }
 
+function saveCsvFileData(req,res,next){
+	  var fs = require('fs');
+    var geocoder = require('geocoder');
+    var async = require('async');
+    console.log(__dirname);
+
+var csv = require("fast-csv");
+
+var inputFile = __dirname+'/../routeData.csv';
+var stream = fs.createReadStream(inputFile);
+ var results = [];
+ var errors = [];
+ var error = {};
+csv
+ .fromStream(stream, {headers : ["fromLocation","toLocation"]})
+ .on("data", function(data){
+
+    async.parallel({
+        from:function(fromCallback){
+            geocoder.geocode(data.fromLocation, function ( errs, geocodeData ) {
+  if(errs){
+        console.log("I from error");
+        fromCallback(errs,null);
+  }else if((geocodeData)&&(geocodeData.status == "OK")){
+      //      console.log(geocodeData.results[0].formatted_address);
+      //      console.log(geocodeData.results[0].geometry);
+            var loc = geocodeData.results[0].geometry.location;
+            var fromLocationObj = {};
+            fromLocationObj.location = {
+                "type":"Point",
+                "coordinates":[loc.lng,loc.lat]
+            };
+            fromLocationObj.full_address = geocodeData.results[0].formatted_address;
+            fromLocationObj._id = uuid.v4();
+      //      console.log(fromLocationObj);
+            db.collection("csv_locations1").findOne({"location":fromLocationObj.location},function(err,locationResult){
+                if(err){
+                    fromCallback(err,null)
+                }else if(locationResult){
+                    fromCallback(null,locationResult);
+                    console.log("location already exists.");
+                }else{
+                    db.collection("csv_locations1").insert(fromLocationObj,function(err1,insResult){
+                        if(err1){
+                        	console.log("Error at from insert");
+                            fromCallback(err1,null)
+                        }else{
+                            fromCallback(null,fromLocationObj);
+                        }
+                    })
+                }
+            });
+  }else{
+            
+            error.from = data.fromLocation;
+            errors.push(data);
+            fromCallback(data,null);
+         //    console.log(data);
+            
+  }
+});
+        },
+        to:function(toCallback){
+            geocoder.geocode(data.toLocation, function ( errs, geocodeData ) {
+        console.log("To Location");
+ // console.log(geocodeData);
+  if(errs){
+    console.log("I am from to error");
+    toCallback(errs,null);
+  }
+   else if((geocodeData)&&(geocodeData.status == "OK")){
+   //    console.log(geocodeData.results[0].formatted_address);
+   //     console.log(geocodeData.results[0].geometry.location);
+ var loc = geocodeData.results[0].geometry.location;
+var toLocationObj = {}; 
+    toLocationObj.location = {
+        "type":"Point",
+        "coordinates":[loc.lng,loc.lat]
+    };
+    toLocationObj.full_address = geocodeData.results[0].formatted_address;
+    toLocationObj._id = uuid.v4();
+ //   console.log(toLocationObj);
+      db.collection("csv_locations1").findOne({"location":toLocationObj.location},function(err,locationResult){
+                if(err){
+                    toCallback(err,null)
+                }else if(locationResult){
+                    toCallback(null,locationResult);
+                    console.log("location already exists.");
+                }else{
+                    db.collection("csv_locations1").insert(toLocationObj,function(err1,insResult){
+                        if(err1){
+                        	console.log("From insert");
+                            toCallback(err1,null)
+                        }else{
+                            toCallback(null,toLocationObj);
+                        }
+                    })
+                }
+            });
+  }else{
+            error.to = data.toLocation;
+            errors.push(data);
+            toCallback(data,null);
+      //      console.log(data);
+      //      res.send({"status":"error","errorobj":error});
+      //      exit;
+  }
+});
+        }
+    },function(errs,results){
+        if(errs){
+            console.log("error at :"+data.fromLocation +"    to:"+data.toLocation);
+            console.log(errs);
+        }else if((results)&&(results.from)&&(results.to)){
+            var routeObj = {};
+            routeObj._id = uuid.v4();
+            routeObj.way_points = [];
+            routeObj.start_location = results.from._id;
+            routeObj.end_location = results.to._id;
+            routeObj.route_name = "Route From "+data.fromLocation+" to "+data.toLocation;
+
+            db.collection("csv_routes1").findOne({"start_location":routeObj.start_location,"end_location":routeObj.end_location},function(errRoutes,routeResult){
+            	if(errRoutes){
+            		console.log("error while getting the results");
+            	}else if(routeResult){
+            		console.log("alredy existing route");
+            		console.log(data);
+            	}else{
+            	  db.collection("csv_routes1").insert(routeObj,function(err,results){
+                        if(err){
+                                 console.log("error while inserting the routes data");
+                        }else{
+                             results.push(data);
+                        }
+                    });	
+            	}
+            });
+                  
+                   
+        }else{
+            console.log("I am from else block");
+        }
+
+    });
+  //   console.log(data);
+ })
+ .on("end", function(){
+     console.log("done");
+     console.log(error);
+     res.send({"result":results,"errors":errors});
+ });
+}
+
 return {
  oauthLoginHandler:oauthLoginHandler,
  controle:controle,
@@ -651,7 +804,8 @@ return {
  updateDriverDetails:updateDriverDetails,
  updateMobileNumber:updateMobileNumber,
  resendMobileConfCode:resendMobileConfCode,
- loginAuditInsert:loginAuditInsert
+ loginAuditInsert:loginAuditInsert,
+ saveCsvFileData:saveCsvFileData
 }
 
 })();

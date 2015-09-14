@@ -583,7 +583,7 @@ $scope.findMatchData = function(matchdata){
           $scope.fromMarker.setMap(null);
           var markers = [];
             for (var j = 0; j < $scope.markers.length; j++) {
-      markers[j].setMap(null);
+      $scope.markers[j].setMap(null);
     }
           for(var i =0;i<routes.length;i++){
 

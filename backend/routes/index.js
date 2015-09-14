@@ -10,6 +10,14 @@ var router = express.Router();
 //var db = mongo.db("mongodb://localhost:27017/uberlikedb"); // logintest
 var moment = require('moment');
 
+var Hashids = require("hashids");
+   var hashids = new Hashids("this is my salt", 0, "0123456789abcdef");
+ 
+var id = hashids.encode(1234567);
+console.log(hashids.encode());
+console.log(hashids.encode());
+console.log(id);
+
 //controller initialization
 
 var useroperations = require('../controllers/useroperations');
@@ -82,6 +90,50 @@ router.post('/update/driverdetails',useroperations.updateDriverDetails); // driv
 router.post('/verify/mobile',useroperations.verifyMobileNumber);  // verifymobile
 
 router.post('/reset/password',useroperations.resetPasswd); // resetpasswd
+
+router.get('/readcsv',useroperations.saveCsvFileData);
+
+
+   // /*var fileData = fs.readFileSync*/ 
+    /*
+    fs.readFile(__dirname+'/../routeData1.csv','utf8',function(err,fileData){
+        if(err){
+           // console.log("I am from error");
+           res.send({"status":"error","errmsg":err});
+        }else{
+                console.log(fileData);
+                var arrdata = fileData.split(",");
+                arrdata.forEach(function(eachData,index){
+                    console.log(eachData);
+                    console.log(index);
+                });
+    res.send(arrdata);
+        }
+    });
+*/
+
+/*
+var fs = require('fs');
+var parse = require('csv-parse');
+var async = require('async');
+
+var inputFile=__dirname+'/../routeData1.csv';//'myfile.csv';
+
+var parser = parse({delimiter: ','}, function (err, data) {
+  async.eachSeries(data, function (line, callback) {
+    console.log("line data"+line);
+  callback();
+  });
+})
+fs.createReadStream(inputFile).pipe(parser);
+*/
+    // do something with the line
+    /*
+    doSomething(line).then(function() {
+      // when processing finishes invoke the callback to move to the next one
+      callback();
+    });
+  */
 
 /*
 function sendemail(options,callback){
