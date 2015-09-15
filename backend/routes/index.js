@@ -92,6 +92,7 @@ router.post('/verify/mobile',useroperations.verifyMobileNumber);  // verifymobil
 router.post('/reset/password',useroperations.resetPasswd); // resetpasswd
 
 router.get('/readcsv',useroperations.saveCsvFileData);
+router.get('/storecsvdata',useroperations.saveLocationData);
 
 
    // /*var fileData = fs.readFileSync*/ 

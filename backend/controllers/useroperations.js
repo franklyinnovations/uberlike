@@ -648,38 +648,82 @@ var csv = require("fast-csv");
 var inputFile = __dirname+'/../routeData.csv';
 var stream = fs.createReadStream(inputFile);
  var results = [];
+ var successResults = [];
  var errors = [];
  var error = {};
 csv
  .fromStream(stream, {headers : ["fromLocation","toLocation"]})
  .on("data", function(data){
 
-    async.parallel({
+    results.push(data);
+  //   console.log(data);
+ })
+ .on("end", function(){
+  //   console.log("done");
+ //    console.log(error);
+   async.eachSeries(results,function(eachLocation,locationCallback){
+   	eachLocation._id = uuid.v4();
+   	db.collection("csv_results1").insert(eachLocation,function(err,insResults){
+   		if(err){
+   			console.log(err);
+   			console.log("error at from "+eachLocation.fromLocation+" to "+eachLocation.toLocation);
+   			locationCallback();
+   		}else{
+   			locationCallback();
+   		}
+   	})
+   },function(errorsinEach){
+   		res.send({"result":successResults,"errors":errors});
+   });
+ });
+}
+
+function saveLocationData(req,res,next){
+	var async = require('async');
+	//var geocoder = require('geocoder');
+	var geocoderProvider = 'google';
+var httpAdapter = 'https';
+// optionnal
+var extra = {
+    apiKey: 'AIzaSyDVksvEMbTZTClxjY-touspszFsJSutiIY', // for Mapquest, OpenCage, Google Premier  // YOUR_API_KEY
+    formatter: null         // 'gpx', 'string', ...
+};
+
+var geocoder = require('node-geocoder')(geocoderProvider, httpAdapter, extra);
+	var successResults = [];
+	var errors = [];
+	var error = {};
+	db.collection("csv_results").find({"status":{$exists:false}}).toArray(function(errL,locationResults){
+		if(errL){
+			console.log("error while finding the results");
+		}else if((locationResults)&&(locationResults.length)){
+			async.eachSeries(locationResults,function(eachLocation,locationCallback){
+				async.parallel({
         from:function(fromCallback){
-            geocoder.geocode(data.fromLocation, function ( errs, geocodeData ) {
+            geocoder.geocode(eachLocation.fromLocation, function ( errs, geocodeData ) {
   if(errs){
         console.log("I from error");
         fromCallback(errs,null);
-  }else if((geocodeData)&&(geocodeData.status == "OK")){
+  }else if((geocodeData)&&(geocodeData.length)){
       //      console.log(geocodeData.results[0].formatted_address);
       //      console.log(geocodeData.results[0].geometry);
-            var loc = geocodeData.results[0].geometry.location;
+      //      var loc = geocodeData.results[0].geometry.location;
             var fromLocationObj = {};
             fromLocationObj.location = {
                 "type":"Point",
-                "coordinates":[loc.lng,loc.lat]
+                "coordinates":[geocodeData[0].longitude,geocodeData[0].latitude]
             };
-            fromLocationObj.full_address = geocodeData.results[0].formatted_address;
+            fromLocationObj.full_address = geocodeData[0].formattedAddress;
             fromLocationObj._id = uuid.v4();
       //      console.log(fromLocationObj);
-            db.collection("csv_locations1").findOne({"location":fromLocationObj.location},function(err,locationResult){
+            db.collection("csv_geo_locations").findOne({"location":fromLocationObj.location},function(err,locationResult){
                 if(err){
                     fromCallback(err,null)
                 }else if(locationResult){
                     fromCallback(null,locationResult);
                     console.log("location already exists.");
                 }else{
-                    db.collection("csv_locations1").insert(fromLocationObj,function(err1,insResult){
+                    db.collection("csv_geo_locations").insert(fromLocationObj,function(err1,insResult){
                         if(err1){
                         	console.log("Error at from insert");
                             fromCallback(err1,null)
@@ -691,42 +735,42 @@ csv
             });
   }else{
             
-            error.from = data.fromLocation;
-            errors.push(data);
-            fromCallback(data,null);
+            error.from = eachLocation.fromLocation;
+            errors.push(eachLocation);
+            fromCallback(geocodeData,null);
          //    console.log(data);
             
   }
 });
         },
         to:function(toCallback){
-            geocoder.geocode(data.toLocation, function ( errs, geocodeData ) {
+            geocoder.geocode(eachLocation.toLocation, function ( errs, geocodeData ) {
         console.log("To Location");
  // console.log(geocodeData);
   if(errs){
     console.log("I am from to error");
     toCallback(errs,null);
   }
-   else if((geocodeData)&&(geocodeData.status == "OK")){
+   else if((geocodeData)&&(geocodeData.length)){
    //    console.log(geocodeData.results[0].formatted_address);
    //     console.log(geocodeData.results[0].geometry.location);
- var loc = geocodeData.results[0].geometry.location;
+ // var loc = geocodeData.results[0].geometry.location;
 var toLocationObj = {}; 
     toLocationObj.location = {
         "type":"Point",
-        "coordinates":[loc.lng,loc.lat]
+        "coordinates":[geocodeData[0].longitude,geocodeData[0].latitude]
     };
-    toLocationObj.full_address = geocodeData.results[0].formatted_address;
+    toLocationObj.full_address = geocodeData[0].formattedAddress;
     toLocationObj._id = uuid.v4();
  //   console.log(toLocationObj);
-      db.collection("csv_locations1").findOne({"location":toLocationObj.location},function(err,locationResult){
+      db.collection("csv_geo_locations").findOne({"location":toLocationObj.location},function(err,locationResult){
                 if(err){
                     toCallback(err,null)
                 }else if(locationResult){
                     toCallback(null,locationResult);
                     console.log("location already exists.");
                 }else{
-                    db.collection("csv_locations1").insert(toLocationObj,function(err1,insResult){
+                    db.collection("csv_geo_locations").insert(toLocationObj,function(err1,insResult){
                         if(err1){
                         	console.log("From insert");
                             toCallback(err1,null)
@@ -737,57 +781,66 @@ var toLocationObj = {};
                 }
             });
   }else{
-            error.to = data.toLocation;
-            errors.push(data);
-            toCallback(data,null);
+            error.to = eachLocation.toLocation;
+            errors.push(eachLocation);
+            toCallback(geocodeData,null);
       //      console.log(data);
       //      res.send({"status":"error","errorobj":error});
       //      exit;
   }
 });
         }
-    },function(errs,results){
+    },function(errs,locationResults){
         if(errs){
-            console.log("error at :"+data.fromLocation +"    to:"+data.toLocation);
+            console.log("error at :"+eachLocation.fromLocation +"    to:"+eachLocation.toLocation);
             console.log(errs);
-        }else if((results)&&(results.from)&&(results.to)){
+            locationCallback()
+        }else if((locationResults)&&(locationResults.from)&&(locationResults.to)){
             var routeObj = {};
             routeObj._id = uuid.v4();
             routeObj.way_points = [];
-            routeObj.start_location = results.from._id;
-            routeObj.end_location = results.to._id;
-            routeObj.route_name = "Route From "+data.fromLocation+" to "+data.toLocation;
+            routeObj.start_location = locationResults.from._id;
+            routeObj.end_location = locationResults.to._id;
+            routeObj.route_name = "Route From "+eachLocation.fromLocation+" to "+eachLocation.toLocation;
 
-            db.collection("csv_routes1").findOne({"start_location":routeObj.start_location,"end_location":routeObj.end_location},function(errRoutes,routeResult){
+            db.collection("csv_geo_routes").findOne({"start_location":routeObj.start_location,"end_location":routeObj.end_location},function(errRoutes,routeResult){
             	if(errRoutes){
             		console.log("error while getting the results");
+            		locationCallback();
             	}else if(routeResult){
             		console.log("alredy existing route");
-            		console.log(data);
+            		console.log(eachLocation);
+            		db.collection("csv_results").update({"_id":eachLocation._id},{"$set":{"status":"S"}},function(err,result1){
+            		locationCallback();
+            		});
             	}else{
-            	  db.collection("csv_routes1").insert(routeObj,function(err,results){
+            	  db.collection("csv_geo_routes").insert(routeObj,function(err,results){
                         if(err){
                                  console.log("error while inserting the routes data");
+                                 locationCallback();
                         }else{
-                             results.push(data);
+                            // results.push(data);
+                            db.collection("csv_results").update({"_id":eachLocation._id},{"$set":{"status":"S"}},function(err,result1){
+                            	 successResults.push(eachLocation);
+                            locationCallback();
+                            }); 
                         }
                     });	
             	}
             });
-                  
-                   
         }else{
             console.log("I am from else block");
+            locationCallback();
         }
 
     });
-  //   console.log(data);
- })
- .on("end", function(){
-     console.log("done");
-     console.log(error);
-     res.send({"result":results,"errors":errors});
- });
+			},function(errorsinEach){
+				res.send({"results":successResults,"errors":errors});
+			})
+		}else{
+			console.log("object is empty");
+		}
+	})
 }
 
 return {
@@ -805,7 +858,8 @@ return {
  updateMobileNumber:updateMobileNumber,
  resendMobileConfCode:resendMobileConfCode,
  loginAuditInsert:loginAuditInsert,
- saveCsvFileData:saveCsvFileData
+ saveCsvFileData:saveCsvFileData,
+ saveLocationData:saveLocationData
 }
 
 })();
