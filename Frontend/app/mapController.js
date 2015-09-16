@@ -68,7 +68,7 @@ var pointPlace = function() {
   $scope.fromAddress =   $scope.fulladdress;// $scope.fullname;
   console.log(pos);
   console.log($scope.fulladdress);
-  $scope.setLocation($scope.search_position.dest_lat,$scope.search_position.dest_lng,$scope.fulladdress,true);
+  $scope.setLocation(pos.lat,pos.lng,$scope.fulladdress,true);
  // $scope.fromMarker(null);
   $scope.fromMarker.setMap(null);
   $scope.fromMarker = setMarker(pos,"Your location");
@@ -479,11 +479,12 @@ $scope.saveUserSearch = function(data){
   var passengerSearch = {};
   passengerSearch.coordinates = [$scope.position.present_lng,$scope.position.present_lat];
       var pos = {};
-      pos.lat = customers.dest_lat;
-      pos.lng = customers.dest_lng;
+      pos.lat = customers.present_lat;
+      pos.lng = customers.present_lng;
       var destination = {};
       destination.lat = customers.dest_lat;
       destination.lng = customers.dest_lng;
+      
 	/*
   Data.post('/passengers/search/destination',customers).then(function(results){
 		console.log(results);
@@ -507,6 +508,7 @@ routeObj.toLocation = {
 routeObj.startLocationAddress = $scope.fromAddress;
 routeObj.endLocationAddress = $scope.toAddress;
 
+/*
 Data.post('/passengers/saveroute',routeObj).then(function(results){
 if(results.status == "success"){
   console.log("I am from success");
@@ -516,7 +518,9 @@ if(results.status == "success"){
   console.log(results);
 }
 });
+*/
 
+/*
 Data.post('/passengers/avilabletaxies',passengerSearch).then(function(results){
 // /passengers/avilabletaxies
 if(results.status == "success"){
@@ -535,6 +539,7 @@ if(results.status == "success"){
 }
 
 });
+*/
 
 var start = new google.maps.LatLng(pos.lat,pos.lng);
  var end = new google.maps.LatLng(destination.lat,destination.lng);
@@ -544,20 +549,62 @@ var start = new google.maps.LatLng(pos.lat,pos.lng);
  //$scope.fromMarker.setMap(null);
 directionsService.route({
        origin: $scope.fromAddress, //start,//data.from,//
-       destination: $scope.toAddress, // end,// data.destination,
+       destination: $scope.toAddress, // end,// data.destination,  
        travelMode: google.maps.TravelMode.DRIVING
          }, function(resultdata, status) {
           console.log(resultdata);
+          var routeObj = {};
+routeObj.fromLocation = {
+  "type":"Point",
+  "coordinates":[customers.present_lng,customers.present_lat]
+};
+routeObj.toLocation = {
+  "type":"Point",
+  "coordinates":[customers.dest_lng,customers.dest_lat]
+}
+routeObj.startLocationAddress = $scope.fromAddress;
+routeObj.endLocationAddress = $scope.toAddress;
+          var tripDetails = {};
+          tripDetails.startLocation = {};
+          tripDetails.startLocation.location = {"type":"Point","coordinates":[pos.lng,pos.lat]};
+          tripDetails.startLocation.full_address = $scope.fromAddress;
+          tripDetails.endLocation = {};
+          tripDetails.endLocation.location = {"type":"Point","coordinates":[destination.lng,destination.lat]};
+          tripDetails.endLocation.full_address = $scope.toAddress;
            if (status == google.maps.DirectionsStatus.OK) {
+            tripDetails.directionsResult = resultdata; 
+            Data.post('/passengers/savetrip',tripDetails).then(function(results){
+              if(results.status == "success"){
+                console.log(results);
+              }else{
+                console.log(results);
+              }
+            });
+            //   waypoints:[{location: "borabanda,Hyderabad,Telangana",stopover: true }],
+
+         /*
+            var subroutes = [];
+            var subObj = {};
+            var k = 0;
+            for(var i in resultdata.routes[0].legs){
+              console.log(resultdata.routes[0].legs[i]);
+              subObj.start_locality = resultdata.routes[0].legs[i].start_address;
+              subObj.start_location = resultdata.routes[0].legs[i].start_location;
+              subObj.end_locality = resultdata.routes[0].legs[i].end_address;
+              subObj.end_location = resultdata.routes[0].legs[i].end_location;
+              subObj.encriptedline = [];
+              for(var j in resultdata.routes[0].legs[i].steps){
+                subObj.encriptedline.push(resultdata.routes[0].legs[i].steps[j].polyline.points);
+              }
+              subroutes.push(subObj);
+            }
+            console.log(subroutes);
+            */
              directionsDisplay.setDirections(resultdata);
-              
            }else{
             alert("Failed to get google maps direction");
            }
-
          });  
-
-
 }
 
 $scope.findMatchData = function(matchdata){

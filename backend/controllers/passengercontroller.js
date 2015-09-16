@@ -5,6 +5,13 @@ var moment = require('moment');
 var async = require('async');
 var underscore = require('underscore');
 var validator = require('validator');
+var geocoderProvider = 'google';
+var httpAdapter = 'https';
+var extra = {
+    apiKey: 'AIzaSyDVksvEMbTZTClxjY-touspszFsJSutiIY', // for Mapquest, OpenCage, Google Premier  // YOUR_API_KEY
+    formatter: null         // 'gpx', 'string', ...
+};
+var geocoder = require('node-geocoder')(geocoderProvider, httpAdapter, extra);
 
 
 	function searchedLocations(req,res,next){
@@ -131,7 +138,7 @@ var validator = require('validator');
 	 	}
 	 }
 
-	 function saveRoute(req,res,next){
+	 function saveRouteInfo(req,res,next){
 	 	var routeInfo = req.body;
 	 	if((routeInfo)&&(routeInfo.fromLocation)&&(routeInfo.toLocation)&&(routeInfo.startLocationAddress)&&(routeInfo.endLocationAddress)){
 	 		async.parallel({
@@ -267,13 +274,354 @@ var validator = require('validator');
 	  }
 	 }
 
+	 /*
+	 function saveRoutesAndSubRoutes(req,res,next){
+	 	var routeData = req.body;
+	 	var order = 0;
+	 	async.eachSeries(routeData,function(eachSubRoute,subRouteCallback){
+	 		async.parallel({
+	 			from:function(fromLocationCallback){
+	 				db.collection("locations").findOne({"location":eachSubRoute.start_location},function(errFrom,fromLocation){
+	 					if(errFrom){
+	 						fromLocationCallback(errFrom,null);
+	 					}else if(fromLocation){
+	 						fromLocationCallback(null,fromLocation);
+	 					}else{
+	 						var fromLocationObj = {};
+	 						fromLocationObj.location  = eachSubRoute.start_location;
+	 						fromLocationObj.full_address = eachSubRoute.start_location_address;
+	 						fromLocationObj._id = uuid.v4();
+	 						db.collection("locations").insert(fromLocationObj,function(fromErr,locationFrom){
+	 							if(fromErr){
+	 								fromLocationCallback(fromErr,null);
+	 							}else{
+	 								fromLocationCallback(null,locationFr)
+	 							}
+	 						})
+	 					}
+	 				})
+	 			},
+	 			to:function(toLocationCallback){
+
+	 			}
+
+	 		},function(errLocation,subRouteLocations){
+	 			if(errLocation){
+	 				subRouteCallback(errLocation);
+	 			}else if((subRouteLocations)&&(subRouteLocations.from)&&(subRouteLocations.to)){
+	 				db.collection("sub_routes").findOne({"route_id":eachSubRoute.route_id,"start_location":subRouteLocations.from._id,"end_location":subRouteLocations.to_id},function(subErr,subRouteResult){
+	 					if(subErr){
+
+	 					}else if(subRouteResult){
+
+	 					}else{
+
+	 					}
+	 				});
+	 			}else{
+	 				subRouteCallback();
+	 			}
+	 		})
+	 	},function(errSubRoute){
+
+	 	});
+
+	 }
+	 */
+
+
+	 function saveTripData(req,res,next){
+	 	var tripData = req.body;
+	 	if((tripData)&&(tripData.startLocation)&&(tripData.startLocation.location)&&(tripData.endLocation)&&(tripData.endLocation.location)&&(tripData.directionsResult)){
+	 		async.parallel({
+	 			from:function(fromCallback){
+	 				findOrSaveLocation(tripData.startLocation,fromCallback)
+	 			},
+	 			to:function(toCallback){
+	 				findOrSaveLocation(tripData.endLocation,toCallback)
+	 			}
+	 		},function(tripErrs,locationResults){
+	 			if(tripErrs){
+	 				res.send({"status":"error","msg":"Some Location information saving or retriving is failed."});
+	 			}else if((locationResults)&&(locationResults.from)&&(locationResults.to)){
+	 				var startLocationResult = locationResults.from;
+	 				var endLocationResult = locationResults.to;
+	 				var myTrip = {};
+	 					myTrip.start_location = startLocationResult._id;
+	 					myTrip.end_location = endLocationResult._id;
+	 					myTrip.trip_name = "Trip from "+startLocationResult.full_address+" to "+endLocationResult.full_address;
+	 					saveTrip(myTrip,function(tripErr,tripResult){
+	 						if(tripErr){
+	 							res.send({"status":"error","msg":"Error while handling trip."});
+	 						}else{
+	 							//resultdata.routes
+	 							
+	 							var routeResults = [];
+	 							async.eachSeries(tripData.directionsResult.routes,function(eachRoute,routeCallback){
+	 								var routeObj = {};
+	 								routeObj.encripted_line = eachRoute.overview_polyline;
+	 								routeObj.trip_id = tripResult._id;
+
+	 								saveRoute(routeObj,function(routeErr,routeResult){
+	 									if(routeErr){
+	 									routeCallback(routeErr);
+	 									}else{
+	 										var legorder = 0;
+	 										var legResults = [];
+	 										var stepResults = [];
+	 										async.eachSeries(eachRoute.legs,function(eachLeg,legCallback){
+	 											var legObj = {};
+	 											legObj.start_location = {};
+	 											legObj.end_location = {};
+	 											console.log(eachLeg.start_location);
+	 											console.log(eachLeg.end_location);
+	 											legObj.start_location.location = {"type":"Point","coordinates":[eachLeg.start_location.L,eachLeg.start_location.H]};
+
+//	 											legObj.start_location.location = {"type":"Point","coordinates":[eachLeg.start_location.lng,eachLeg.start_location.lat]};
+	 											legObj.start_location.full_address = eachLeg.start_address;
+	 											legObj.end_location.location = {"type":"Point","coordinates":[eachLeg.end_location.L,eachLeg.end_location.H]};
+	 								 //			legObj.end_location.location = {"type":"Point","coordinates":[eachLeg.end_location.lng,eachLeg.end_location.lat]};
+	 											legObj.end_location.full_address = eachLeg.end_address; 	
+	 											legObj.route_id = routeResult._id;
+	 											legObj.order = legorder;
+	 											saveLeg(legObj,function(legErr,legResult){
+	 												if(legErr){
+	 													legCallback(legErr);
+	 												}else{
+	 													
+	 													async.eachSeries(eachLeg.steps,function(eachStep,stepCallback){
+	 														var stepObj = {};
+	 														stepObj.leg_id = legResult._id;
+	 														stepObj.start_location = eachStep.start_location;
+	 														stepObj.end_location = eachStep.end_location;
+	 														stepObj.leg_id = legResult._id;
+	 														stepObj.encripted_line = eachStep.polyline.points;
+	 														saveStep(stepObj,function(stepErr,stepResult){
+	 															if(stepErr){
+	 																stepCallback(stepErr);
+	 															}else{
+	 																stepResults.push(stepResult);
+	 																stepCallback();
+	 															}
+	 														});
+
+	 													},function(stepError){
+	 														if(stepError){
+	 															legCallback(stepError);
+	 														}else{
+	 															legResult.stepResults = stepResults;
+	 															legResults.push(legResult);
+	 															legCallback();
+	 														}
+	 													})
+	 												}
+	 											})
+	 										},function(legError){
+	 											if(legError){
+	 												routeCallback(legError);
+	 											}else{
+	 												routeResult.legResults = legResults;
+	 												routeResults.push(routeResult);
+	 												routeCallback();
+	 											}
+
+	 										});
+	 									}
+	 								})
+
+	 							},function(routeError){
+	 								if(routeError){
+	 									console.log(routeError);
+	 									res.send({"status":"error","msg":"error While handling route"});
+	 								}else{
+	 									tripResult.routeResults = routeResults;
+	 									res.send({"status":"success",resultObj:tripResult});
+	 								}
+
+	 							});
+	 						}
+	 					}); 
+
+	 			}else{
+	 				res.send({"status":"error","msg":"Some Location information inserting failed"});
+	 			}
+	 		})
+	 	}else{
+	 		res.send({"status":"error","msg":"Some Trip Data is missing."});
+	 	}
+	 }
+
+	 function saveTrip(tripObj,callback){
+	 	db.collection("trips").findOne({"start_location":tripObj.start_location,"end_location":tripObj.end_location},function(tripErr,tripResult){
+	 		if(tripErr){
+	 			callback(tripErr,null);
+	 		}else if(tripResult){
+	 			callback(null,tripResult)
+	 		}else{
+	 			tripObj._id = uuid.v4();
+	 			db.collection("trips").insert(tripObj,function(tErr,insTripResult){
+	 				if(tErr){
+	 					callback(tErr,null);
+	 				}else{
+	 					callback(null,tripObj);
+	 				}
+	 			})
+	 		}
+	 	})
+	 }
+
+	 function saveLeg(legObj,callback){
+	 	console.log(legObj);
+	 	                  async.parallel({
+	 									fromLeg:function(fromLegCallback){
+	 										findOrSaveLocation(legObj.start_location,fromLegCallback)
+	 									},
+	 									toLeg:function(toLegCallback){
+	 									    findOrSaveLocation(legObj.end_location,toLegCallback)
+	 									}
+	 								},function(legErr,legResults){
+	 									if(legErr){
+	 										callback(legErr,null);
+	 									}else{
+	 										var legData = {};
+	 										legData._id = uuid.v4();
+	 										legData.route_id = legObj.route_id;
+	 										legData.start_location = legResults.fromLeg._id;
+	 										legData.end_location = legResults.toLeg._id;
+	 										legData.order = legObj.order;
+	 										legData.leg_from = "From "+legResults.fromLeg.full_address+" to "+legResults.toLeg.full_address;
+	 										db.collection("legs").insert(legData,function(legErr,legInsResult){
+	 											if(legErr){
+	 												callback(legErr,null);
+	 											}else{
+	 												callback(null,legData);
+	 											}
+	 										})
+	 									}
+	 								});
+
+	 }
+
+	 function saveStep(stepObj,callback){
+	 	console.log(stepObj);
+	 	async.parallel({
+	 		fromStep:function(fromStepCallback){
+	 			var fromLocationObj = {};
+	 			fromLocationObj.location = {"type":"Point","coordinates":[stepObj.start_location.L,stepObj.start_location.H]};
+	 			fromLocationObj.full_address = ""; 
+	 			findOrSaveLocation(fromLocationObj,fromStepCallback);
+	 		 //	geocoder.reverse({lat:45.767, lon:4.833}
+  /*
+  geocoder.reverse({"lat":stepObj.start_location.lat,"lon":stepObj.start_location.lng}, function ( errs, geocodeData ) {
+  if(errs){
+        fromStepCallback(errs,null);
+  }else if((geocodeData)&&(geocodeData.length)){
+            var fromLocationObj = {};
+            fromLocationObj.location = {
+                "type":"Point",
+                "coordinates":[geocodeData[0].longitude,geocodeData[0].latitude]
+            };
+            fromLocationObj.full_address = geocodeData[0].formattedAddress;
+            findOrSaveLocation(fromLocationObj,fromStepCallback);
+	 		}else{
+	 			fromStepCallback("error while geocoding",null);
+	 		}
+	 	});
+*/
+	 		},
+	 		toStep:function(toStepCallback){
+	 			var toLocationObj = {};
+	 			toLocationObj.location = {"type":"Point","coordinates":[stepObj.end_location.L,stepObj.end_location.H]};
+	 			toLocationObj.full_address = "";
+	 			findOrSaveLocation(toLocationObj,toStepCallback);
+	 			/*
+	 			geocoder.reverse({"lat":stepObj.end_location.lat,"lon":stepObj.end_location.lng}, function ( errs, geocodeData ) {
+  if(errs){
+        toStepCallback(errs,null);
+  }else if((geocodeData)&&(geocodeData.length)){
+            var toLocationObj = {};
+            toLocationObj.location = {
+                "type":"Point",
+                "coordinates":[geocodeData[0].longitude,geocodeData[0].latitude]
+            };
+            toLocationObj.full_address = geocodeData[0].formattedAddress;
+            findOrSaveLocation(toLocationObj,toStepCallback);
+	 		}else{
+	 			toStepCallback("error while geocoding",null);
+	 		}
+	 	});
+*/
+	 		}
+	 	},function(err,stepResults){
+	 		if(err){
+	 			callback(err,null)
+	 		}else{
+	 			console.log(stepResults);
+	 			var stepData = {};
+	 			stepData._id = uuid.v4();
+	 			stepData.start_location = stepResults.fromStep._id;
+	 			stepData.end_location = stepResults.toStep._id;
+	 			stepData.leg_id = stepObj.leg_id;
+	 			stepData.step_name = "From "+stepResults.fromStep.full_address+" to "+stepResults.toStep.full_address;
+	 			stepData.encripted_line = stepObj.encripted_line;
+	 			db.collection("steps").insert(stepData,function(stepError,stepResult){
+	 				if(stepError){
+	 					callback(stepError,null);
+	 				}else{
+	 					callback(null,stepData);
+	 				}
+	 			});
+
+	 		}
+	 	})
+	 }
+
+	 function saveRoute(routeObj,callback){
+
+	 	db.collection("routes").find({"trip_id":routeObj.trip_id}).toArray(function(routeErr,routeResult){
+	 		if(routeErr){
+	 			callback(routeErr,null);
+	 		}else{
+	 			routeObj.order = routeResult.length || 0;
+	 			routeObj._id = uuid.v4();
+	 			db.collection("routes").insert(routeObj,function(routeInsErr,routeInsResult){
+	 				if(routeInsErr){
+	 					callback(routeInsErr,null);
+	 				}else{
+	 					callback(null,routeObj);
+	 				}
+	 			});
+	 		}
+	 	});
+	 }
+
+	 function findOrSaveLocation(locationObj,callback){
+	 	db.collection("locations").findOne({"location":locationObj.location},function(err,locationResult){
+	 		if(err){
+	 			callback(err,null);
+	 		}else if(locationResult){
+	 			callback(null,locationResult);
+	 		}else{
+	 			locationObj._id = uuid.v4();
+	 			db.collection("locations").insert(locationObj,function(errOne,result){
+	 				if(errOne){
+	 					callback(errOne,null);
+	 				}else{
+	 					callback(null,locationObj);
+	 				}
+	 			})
+	 		}
+	 	})
+	 }
+
 	return {
 		searchedLocations:searchedLocations,  // searchedlocation
 		saveUserLocation:saveUserLocation,    // savelocation
 		setLocation:setLocation,
 		findNearTaxies:findNearTaxies,
-		saveRoute:saveRoute,
-		findMatchResult:findMatchResult
+		saveRouteInfo:saveRouteInfo,
+		findMatchResult:findMatchResult,
+		saveTripData:saveTripData
 	}
 
 })();

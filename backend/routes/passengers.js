@@ -16,8 +16,10 @@ router.post('/setlocation',passengercontroller.setLocation);
 
 router.post('/avilabletaxies',passengercontroller.findNearTaxies);
 
-router.post('/saveroute',passengercontroller.saveRoute);
+router.post('/saveroute',passengercontroller.saveRouteInfo);
 
 router.post('/findmatchroutes',passengercontroller.findMatchResult);
+
+router.post('/savetrip',passengercontroller.saveTripData);
 
 module.exports = router;
