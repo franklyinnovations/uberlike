@@ -12,6 +12,9 @@ var extra = {
     formatter: null         // 'gpx', 'string', ...
 };
 var geocoder = require('node-geocoder')(geocoderProvider, httpAdapter, extra);
+var polyline = require('polyline');
+ //console.log("passenger moment");
+ //console.log(moment("2015-04-13T06:06:08+00:00","YYYY-MM-DDTHH:mm:ssZ").utc().format());
 
 
 	function searchedLocations(req,res,next){
@@ -614,6 +617,107 @@ var geocoder = require('node-geocoder')(geocoderProvider, httpAdapter, extra);
 	 	})
 	 }
 
+	 function poliLineDecode(req,res,next){
+	 	var data = req.body;
+	 	db.collection("steps").findOne({},function(err,stepResult){
+	 		if(err){
+	 			res.send({"status":"error","msg":"error while getting steps"});
+	 		}else{
+	 			var decodedData = polyline.decode(stepResult.encripted_line);
+	 			res.send({"status":"success","decodedObj":decodedData});
+	 		}
+	 	});
+	 }
+
+	 function saveSearchData(req,res,next){
+	 	var tripData = req.body;
+	 	if((tripData)&&(tripData.startLocation)&&(tripData.startLocation.location)&&(tripData.endLocation)&&(tripData.endLocation.location)&&(tripData.directionsResult)&&(tripData.timeToLeave)&&(tripData.user_id)){
+	 		var tripObj = {};
+	 		tripObj._id = uuid.v4();
+	 		tripObj.user_id = tripData.user_id;
+	 		tripObj.startLocation = tripData.startLocation.location;
+	 		tripObj.endLocation = tripData.endLocation.location;
+	 		tripObj.trip_details = "From "+tripData.startLocation.full_address+" to "+tripData.endLocation.full_address;
+	 		tripObj.start_address = tripData.startLocation.full_address;
+	 		tripObj.end_address = tripData.endLocation.full_address;
+	 		tripObj.start_time = moment(tripData.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().format();  // "2015-04-13T06:06:08+00:00"
+	 		tripObj.start_time = moment.utc(tripData.timeToLeave).format();
+	 		tripObj.created_time = moment.utc().format();
+	 		db.collection("trips").findOne({"startLocation":tripObj.startLocation,"endLocation":tripObj.endLocation,"user_id":tripObj.user_id,"start_time":tripObj.created_time},function(errTrip,tripResult){
+	 			if(errTrip){
+	 				res.send({"status":"error","msg":"Error while getting the trip results."});
+	 			}else if(tripResult){
+	 				findMatches(tripObj,function(err,matchResults){
+	 					if(err){
+	 						res.send({"status":"error","msg":"Error while finding the matching data"});
+	 					}else{
+	 						res.send({"status":"success","matchObj":matchResults});
+	 					}
+	 				});
+
+	 			}else{
+
+	 		
+	 		tripObj.routes = [];
+	 	//	var routes = [];
+	 		async.eachSeries(tripData.directionsResult.routes,function(eachRoute,routeCallback){
+               var routesObj = {};
+               routesObj.encripted_line = eachRoute.overview_polyline;
+               routesObj.legs = [];
+	 			async.eachSeries(eachRoute.legs,function(eachLeg,legCallback){
+	 				var legObj = {};
+	 				legObj.startLocation = {"type":"Point","coordinates":[eachLeg.start_location.L,eachLeg.start_location.H]};
+	 				legObj.endLocation = {"type":"Point","coordinates":[eachLeg.end_location.L,eachLeg.end_location.H]};
+	 				legObj.start_address = eachLeg.start_address;
+	 				legObj.end_address = eachLeg.end_address;
+	 				legObj.steps = [];
+	 				async.eachSeries(eachLeg.steps,function(eachStep,stepCallback){
+	 					var stepObj = {};
+	 					stepObj.startLocation = {"type":"Point","coordinates":[eachStep.start_location.L,eachStep.start_location.H]};
+	 					stepObj.endLocation = {"type":"Point","coordinates":[eachStep.end_location.L,eachStep.end_location.H]};
+	 					stepObj.encripted_line = polyline.points;
+	 					legObj.steps.push(stepObj);
+	 					stepCallback();
+	 				},function(stepErr){
+	 					routesObj.legs.push(legObj);
+	 					legCallback();
+	 				});
+
+	 			},function(legErr){
+	 				tripObj.routes.push(routesObj);
+	 				routeCallback();
+	 			});
+	 		},function(errRoute){
+	 			db.collection("trips").insert(tripObj,function(err,tripResult){
+	 				if(err){
+	 					res.send({"status":"error","msg":"error while inserting the trip"});
+	 				}else{
+	 					res.send({"status":"success","tripObj":tripObj});
+	 				}
+	 			})
+	 		});
+
+					}
+	 		});
+
+	 	}else{
+	 		res.send({"status":"error","msg":"Some information is missing"});
+	 	}
+	 }
+
+	 function findMatches(matchObj,callback){
+	 	var distance = 4;
+	 	var start_time = moment(matchObj.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().subtract('10','minutes').format();//matchObj.start_time.subtract('10','minutes').format(); // moment.utc()
+	 	var end_time = moment.utc(matchObj.timeToLeave).add('10','minutes').format();  // moment.utc() 
+	 	db.collection("trips").find({"startLocation":{ $nearSphere : {$geometry: matchObj.startLocation, $maxDistance: (distance * 1000) }},"endLocation":{ $nearSphere : {$geometry: matchObj.endLocation, $maxDistance: (distance * 1000) }},"start_time":{$gte:start_time,$lte:end_time}}).toArray(function(tripErr,tripResults){
+	 		if(tripErr){
+	 			callback(tripErr,null);
+	 		}else{
+	 			callback(null,tripResults);
+	 		}
+	 	});
+	 }
+
 	return {
 		searchedLocations:searchedLocations,  // searchedlocation
 		saveUserLocation:saveUserLocation,    // savelocation
@@ -621,7 +725,9 @@ var geocoder = require('node-geocoder')(geocoderProvider, httpAdapter, extra);
 		findNearTaxies:findNearTaxies,
 		saveRouteInfo:saveRouteInfo,
 		findMatchResult:findMatchResult,
-		saveTripData:saveTripData
+		saveTripData:saveTripData,
+		poliLineDecode:poliLineDecode,
+		saveSearchData:saveSearchData
 	}
 
 })();

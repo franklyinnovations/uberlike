@@ -22,4 +22,8 @@ router.post('/findmatchroutes',passengercontroller.findMatchResult);
 
 router.post('/savetrip',passengercontroller.saveTripData);
 
+router.post('/decoded/polyline',passengercontroller.poliLineDecode);
+
+router.post('/searched/trip',passengercontroller.saveSearchData);
+
 module.exports = router;

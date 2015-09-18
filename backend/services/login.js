@@ -15,7 +15,7 @@
     clientID: FACEBOOK_APP_ID,
     clientSecret: FACEBOOK_APP_SECRET,
     callbackURL: "http://localhost/auth/facebook/callback",
-    profileFields : ['emails','name'], // , 'first_name', 'last_name'
+    profileFields : ['emails','name','photos'], // , 'first_name', 'last_name' , 'public_profile' , 'user_photos' 
     enableProof: true//false
   },
   function(accessToken, refreshToken, profile,done) {
@@ -25,7 +25,7 @@
 ));
 
 router.get('/auth/facebook',
-		  passport.authenticate('facebook',{ scope: ['email'] }));
+		  passport.authenticate('facebook',{ scope: ['email','user_photos'] }));  // ,'public_profile'
 router.get('/auth/facebook/callback',
 		  passport.authenticate('facebook', { failureRedirect: '/auth/facebook' }),
 		  function(req, res) {
@@ -54,7 +54,7 @@ passport.use(new GoogleStrategy({
     callbackURL: "http://localhost/auth/google/callback"
   },
   function(accessToken, refreshToken, profile, done){
-   // console.log(profile);
+    console.log(profile);
     //userhandling(profile)
 	  return done(null, profile);
   }

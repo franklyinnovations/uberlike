@@ -571,8 +571,23 @@ routeObj.endLocationAddress = $scope.toAddress;
           tripDetails.endLocation = {};
           tripDetails.endLocation.location = {"type":"Point","coordinates":[destination.lng,destination.lat]};
           tripDetails.endLocation.full_address = $scope.toAddress;
+          tripDetails.timeToLeave = "2015-09-18T10:15:18+00:00";
+          tripDetails.user_id = $rootScope.userinfo._id;
+
+          // /searched/trip
+
            if (status == google.maps.DirectionsStatus.OK) {
-            tripDetails.directionsResult = resultdata; 
+            tripDetails.directionsResult = resultdata;
+            Data.post('/passengers/searched/trip',tripDetails).then(function(results){
+              if(results.status == "success"){
+                console.log(results);
+                directionsDisplay.setDirections(resultdata);
+              }else{
+                console.log(results);
+                alert(results.msg);
+              }
+            }); 
+           /*
             Data.post('/passengers/savetrip',tripDetails).then(function(results){
               if(results.status == "success"){
                 console.log(results);
@@ -580,6 +595,7 @@ routeObj.endLocationAddress = $scope.toAddress;
                 console.log(results);
               }
             });
+              */
             //   waypoints:[{location: "borabanda,Hyderabad,Telangana",stopover: true }],
 
          /*
@@ -600,7 +616,6 @@ routeObj.endLocationAddress = $scope.toAddress;
             }
             console.log(subroutes);
             */
-             directionsDisplay.setDirections(resultdata);
            }else{
             alert("Failed to get google maps direction");
            }
