@@ -5,6 +5,8 @@ var md5 = require('md5');
 var twilio = require('twilio');
 var moment = require('moment');
 var validator = require('validator');
+var fs = require('fs');
+var request = require('request');
 var host = "http://localhost:3000";
 
 	function controle(req,res,next){
@@ -17,28 +19,27 @@ var errorMsg = {
 	errormsg:'default error message'
 }
 
+// //"node ./bin/www"
+
 //Facebook or Google registered userhanling
+
+var download = function(uri, filename, callback){
+  request.head(uri, function(err, res, body){
+    console.log('content-type:', res.headers['content-type']);
+    console.log('content-length:', res.headers['content-length']);
+    console.log(__dirname);
+    request(uri).pipe(fs.createWriteStream("public/images/"+filename)).on('close', callback);
+  });
+};
 
 function oauthLoginHandler(data,res){
 	console.log("coming to userhandle.");
 console.log(data);
+// user.email = data.emails[0].value;
+
 var user = {};
-if(data.provider=="google"){	
 user.email = data.emails[0].value;
-user.provider = "G"//data.provider||"google";
-user.username = data.displayName;
-user.provider_id = data.id;
-//user.type = "P";
-}else{
-user.email = data.emails[0].value;
-user.provider = "F";
-user.username = data.name.givenName+" "+data.name.familyName;
-user.provider_id = data.id;
-//user.type="P";
-}
-user._id = uuid.v4();
-user.password = "";
-user.phonenumber = "";
+
 
 db.collection("user").findOne({"email":user.email},function(err,result){
 if(err){
@@ -47,7 +48,23 @@ if(err){
 	console.log(result);
 	var phonenumber = result.phonenumber;
 	//result = ;
-	console.log("cookie setting-------from exisying accont");
+	if(data.provider=="google"){
+		user.image_url = result._id+'.jpg';
+	var image_base = data.photos[0].value // data.image.url;
+	}else{
+	user.image_url = result._id+'.jpg';
+	var image_base = data.photos[0].value;
+	}
+	/*
+	download(image_base,user.image_url,function(){
+	console.log("Successfully downloaded provider image");
+})
+*/
+	console.log("cookie setting-------from existing accont");
+
+	download(image_base,user.image_url,function(){
+	console.log("Successfully downloaded provider image");
+});
 	res.cookie('user', JSON.stringify(result));
 	/*
 	if(phonenumber){
@@ -59,6 +76,29 @@ if(err){
 	res.redirect('/');
    // res.send({"status":"success","msg":"user login successfully","userdata":result});
 }else{
+	user._id = uuid.v4();
+	if(data.provider=="google"){	
+
+user.provider = "G"//data.provider||"google";
+user.username = data.displayName;
+user.provider_id = data.id;
+user.image_url = user._id+'.jpg';
+var image_base = data.photos[0].value;
+//user.type = "P";
+}else{
+user.provider = "F";
+user.username = data.name.givenName+" "+data.name.familyName;
+user.provider_id = data.id;
+user.image_url = user._id+'.jpg';
+var image_base = data.photos[0].value;
+ // user.image_url ;
+//user.type="P";
+}
+download(image_base,user.image_url,function(){
+	console.log("Successfully downloaded provider image");
+});
+user.password = "";
+user.phonenumber = "";
 	user.confid = uuid.v4();
 	user.confirm = true;
 	user.enable = false;
@@ -75,7 +115,6 @@ if(err){
 		//	res.send({"status":"success","msg":"user registered success fully","userdata":user});
 		}
 	});
-	
 }
 });
 }
@@ -622,7 +661,7 @@ db.collection("user").findOne({"_id":body._id},function(err,result1){
 function loginAuditInsert(req,res,next){
 var loginAuditInfo = req.body;
 console.log(loginAuditInfo);
-if((loginAuditInfo.user_id)&&(loginAuditInfo.location_id)){
+if((loginAuditInfo.user_id)&&(loginAuditInfo.location)){
 	loginAuditInfo._id = uuid.v4();
 loginAuditInfo.datetime = moment.utc().format();// 'YYYY-MM-DDTHH:mm:ss'
 db.collection("login_audit").insert(loginAuditInfo,function(err,result){

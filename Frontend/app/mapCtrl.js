@@ -68,11 +68,10 @@ var insertLocation = function(position){
   location.full_address = $scope.fulladdress;
   location.location = {type : "Point" ,coordinates :[lng,lat]};
    //      /passengers/setlocation
-  Data.post("/passengers/setlocation",location).then(function(results){
-  	if(results.status == "success"){
-  		 var taxiLocationObj = {};
+   var taxiLocationObj = {};
             taxiLocationObj.driver_id = "1234555010101";
-            taxiLocationObj.location_id = results.location._id;
+            taxiLocationObj.location = location.location;
+            taxiLocationObj.full_address = location.full_address;
             taxiLocationObj.isOccupied = false;
             Data.post("/drivers/taxilocation",taxiLocationObj).then(function(results){
               if(results.status == "success"){
@@ -83,10 +82,15 @@ var insertLocation = function(position){
                alert("failed to insert taxilocation");
               }
             });
+  /*
+  Data.post("/passengers/setlocation",location).then(function(results){
+  	if(results.status == "success"){
+
   	}else{
   		alert("Error while saving.");
   	}
   })
+*/
 }
 
 $scope.geolocate = function(isFrom) {

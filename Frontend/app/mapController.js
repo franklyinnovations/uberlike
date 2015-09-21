@@ -147,14 +147,31 @@ $scope.setLocation = function(lat,lng,address,from){
   var location = {};
   location.full_address = address;
   location.location = {type : "Point" ,coordinates :[lng,lat]};
-   //      /passengers/setlocation
-  Data.post("/passengers/setlocation",location).then(function(results){
-    console.log(results);
-        if(results.status == "success"){
-          if($rootScope.userinfo.usertype == "D"){
+ if(from){
+          $scope.location = location.location;
+          $scope.fromLocation = $scope.location;
+          $scope.fromAddress = address;
+     console.log("I am from from");
+     
+     if(!($rootScope.login_status)) {
+      $scope.location = location.location;
+       $cookieStore.put('login',{"status":true,"location":location});
+       var location_address = address;
+        $scope.setLoginAudit($rootScope.userinfo._id,location.location,location_address);
+     }else{
+      $cookieStore.put('login',{"status":true,"location":location});
+   } 
+} else{
+    $scope.toAddress = address;
+    $scope.toLocation = location.location; // results.location;
+    console.log("I am from to");
+  }
+
+  if($rootScope.userinfo.usertype == "D"){
             var taxiLocationObj = {};
+            taxiLocationObj.full_address = address;
             taxiLocationObj.driver_id = $rootScope.userinfo._id;
-            taxiLocationObj.location_id = results.location._id;
+            taxiLocationObj.location = {type : "Point" ,coordinates :[lng,lat]};
             taxiLocationObj.isOccupied = $scope.occupied;
             Data.post("/drivers/taxilocation",taxiLocationObj).then(function(results){
               if(results.status == "success"){
@@ -166,32 +183,19 @@ $scope.setLocation = function(lat,lng,address,from){
                 console.log("Failed to update location:"+results.msg);
               }
             });
-          }
+}
           
-       //   return $scope.location;
-         if(from){
-          $scope.location = results.location;
-          $scope.fromLocation = $scope.location;
-          $scope.fromAddress = address;
-     console.log("I am from from");
-     if(!($rootScope.login_status)) {
-      $scope.location = results.location;
-       $cookieStore.put('login',{"status":true,"location":location});
-        $scope.setLoginAudit($rootScope.userinfo._id,results.location._id);
-     }else{
-      $cookieStore.put('login',{"status":true,"location":results.location});
-     }
-
-  }else{
-    $scope.toAddress = address;
-    $scope.toLocation = results.location;
-    console.log("I am from to");
-  }
+   //      /passengers/setlocation
+ /*
+  Data.post("/passengers/setlocation",location).then(function(results){
+    console.log(results);
+        if(results.status == "success"){
+          }
           }else{
-           //  return {};
            console.log("I am from else block.");
           }
       });
+*/
 }
 
 var setMarker = function(pos,title){
@@ -313,14 +317,15 @@ $scope.setAutocomplete = function(geolocation,radius,from){
 
 }
 
-$scope.setLoginAudit = function(user_id,location_id){
+$scope.setLoginAudit = function(user_id,location,address){
   var loginAudit = {};
   loginAudit.user_id = user_id;
-  loginAudit.location_id = location_id;
+  loginAudit.location = location;
+  loginAudit.full_address = address;
   //loginAudit.logged_location_id = location_id;
   Data.post("/save/loginaudit",loginAudit).then(function(results){
     if(results.status == "success"){
-     $scope.location_id = location_id;
+    // $scope.location_id = location_id;
      $rootScope.login_status = true;
       console.log("Successfully updated login details");
     }else{
@@ -386,11 +391,11 @@ $scope.driverGeolocate = function() {
      if(confirm("Do you want passengers?")){
      	$scope.occupied = false;
      	$scope.trackLocation();
-     	$scope.setChangeLocation($scope.position);
+  //   	$scope.setChangeLocation($scope.position);
      }else{
      	$scope.occupied = true;
      	$scope.trackLocation();
-     	$scope.setChangeLocation($scope.position);
+   // 	$scope.setChangeLocation($scope.position);
      }
   }
   
@@ -520,7 +525,6 @@ if(results.status == "success"){
 });
 */
 
-/*
 Data.post('/passengers/avilabletaxies',passengerSearch).then(function(results){
 // /passengers/avilabletaxies
 if(results.status == "success"){
@@ -539,7 +543,6 @@ if(results.status == "success"){
 }
 
 });
-*/
 
 var start = new google.maps.LatLng(pos.lat,pos.lng);
  var end = new google.maps.LatLng(destination.lat,destination.lng);
@@ -577,7 +580,7 @@ routeObj.endLocationAddress = $scope.toAddress;
           // /searched/trip
 
            if (status == google.maps.DirectionsStatus.OK) {
-            tripDetails.directionsResult = resultdata;
+            tripDetails.directionsResult = resultdata.routes;
             Data.post('/passengers/searched/trip',tripDetails).then(function(results){
               if(results.status == "success"){
                 console.log(results);
@@ -628,6 +631,17 @@ $scope.findMatchData = function(matchdata){
         var start_lng = $scope.position.present_lng || $scope.geolocation.lng;
         var end_lat = $scope.search_position.dest_lat;
         var end_lng = $scope.search_position.dest_lng;
+        matchObj.startLocation = {
+          "type":"Point",
+          "coordinates":[parseFloat(start_lng),parseFloat(start_lat)]
+        };
+        matchObj.endLocation = {
+          "type":"Point",
+          "coordinates":[parseFloat(end_lng),parseFloat(end_lat)]
+        };
+        matchObj.timeToLeave = "2015-09-18T10:15:18+00:00";
+        matchObj.user_id = $rootScope.userinfo._id;
+        /*
         matchObj.startPosition = {
           "type":"Point",
           "coordinates":[parseFloat(start_lng),parseFloat(start_lat)]
@@ -636,36 +650,25 @@ $scope.findMatchData = function(matchdata){
           "type":"Point",
           "coordinates":[parseFloat(end_lng),parseFloat(end_lat)]
         };
-        Data.post("/passengers/findmatchroutes",matchObj).then(function(results){
-          if(results.status == "success"){
+        */
+
+        Data.post('/passengers/match/trips',matchObj).then(function(results){
+          if(results.status){   //   == "success"
             console.log(results);
-          var routes = [];
-          routes = results.routes;
-          $scope.routes = routes;
+          var trips = [];
+          trips = [{"start_address":$scope.fromAddress,"end_address":$scope.toAddress}];//results.matches;
+          $scope.trips = trips;
           $scope.fromMarker.setMap(null);
           var markers = [];
+          var infowindow = [];
             for (var j = 0; j < $scope.markers.length; j++) {
       $scope.markers[j].setMap(null);
     }
-          for(var i =0;i<routes.length;i++){
+          for(var i =0;i<trips.length;i++){
 
-            /* 
-
-            var pos = {
-                    lat :$scope.routes[i].start_location_info.location.coordinates[1],
-                    lng : $scope.routes[i].start_location_info.location.coordinates[0]
-                  }
-
-                  var pos1 = {
-                    lat:$scope.routes[i].end_location_info.location.coordinates[1],
-                    lng:$scope.routes[i].end_location_info.location.coordinates[0]
-                  }
-                  
-                  */
-             
             directionsService.route({
-       origin: routes[i].start_location_info.full_address, //start,//data.from,//
-       destination: routes[i].end_location_info.full_address, // end,// data.destination,
+       origin: trips[i].start_address,//routes[i].start_location_info.full_address, //start,//data.from,//
+       destination: trips[i].end_address,//routes[i].end_location_info.full_address, // end,// data.destination,
        travelMode: google.maps.TravelMode.DRIVING
          }, function(resultdata, status) {
           console.log(resultdata);
@@ -689,8 +692,14 @@ $scope.findMatchData = function(matchdata){
       map: $scope.map,
       icon: "http://maps.google.com/mapfiles/marker" + String.fromCharCode(markers.length + 65) + ".png"
     })); 
-
-             matchDirectionsDisplay = new google.maps.DirectionsRenderer(rendererOptions);                
+             matchDirectionsDisplay = new google.maps.DirectionsRenderer(rendererOptions);
+             var image = 'http://localhost:3000/images/45b3028e-845b-43fa-9f12-21d47dc80649.jpg'; //trips[i].start_address //trips[i].end_address
+               infowindow[i] = new google.maps.InfoWindow({
+    content: '<div><img src="'+image+'">From:'+'Hyderabad'+'<br/>To:'+'begumpeta'+'<button id="'+$rootScope.userinfo._id+'" ng-click="shareMessageSend({user_id:'+$rootScope.userinfo._id+'})">Share</button></div>'
+  });                
+               markers[i].addListener('click', function() {
+    infowindow[i].open($scope.map, markers[i]);
+  });
              matchDirectionsDisplay.setMap($scope.map);
              matchDirectionsDisplay.setDirections(resultdata);
            }else{
@@ -706,4 +715,8 @@ $scope.findMatchData = function(matchdata){
         });
 }
 
+$scope.shareMessageSend = function(data){
+  console.log("share message");
+  console.log(data);
+}
 });

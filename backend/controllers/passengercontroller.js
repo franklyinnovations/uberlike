@@ -95,7 +95,33 @@ var polyline = require('polyline');
 	 	 //	var withInTime = moment.utc().add(5, 'minutes').format('YYYY-MM-DDTHH:mm:ss');
 	 	 var taxiResults = [];
 	 	 	var moreTime = moment.utc().subtract('5','minutes').format(); // YYYY-MM-DDTHH:mm:ssZ
-	 		db.collection("locations").find({"location" : { $nearSphere : {$geometry: {type : "Point",coordinates : fromLocation.coordinates}, $maxDistance: (distance * 1000) }}}).toArray(function(err,results){
+
+	 	 	db.collection("taxi_location").find({"location" : { $nearSphere : {$geometry: {type : "Point",coordinates : fromLocation.coordinates}, $maxDistance: (distance * 1000) }},"isOccupied":false}).toArray(function(err2,taxiResult){
+	 			 	  		if(err2){
+	 			 	  			callback(err2,null);
+	 			 	  		}else{
+	 			 	  			console.log(taxiResult);
+	 			 	  			if((taxiResult)&&(taxiResult.length)){
+	 			 	  				/*
+	 			 	  				eachLocation.taxies = taxiResult;
+	 			 	  				console.log(eachLocation);
+	 			 	  	 //			taxiResuts.push(eachLocation);
+	 			 	  	 			taxiResults.push(eachLocation);
+	 			 	  			console.log("coming here to if condition");
+	 			 	  			*/
+	 			 	  			 //	console.log(taxiResult);
+	 			 	  		 //	callback(null,taxiResult);
+	 			 	  		 res.send({"status":"success","taxies":taxiResults});
+	 			 	  		}else{
+	 			 	  		 //	callback(null,null);
+	 			 	  		 res.send({"status":"success","taxies":[]});
+	 			 	  		}
+	 			 	  		}
+	 			 	  	});
+
+
+	 		/*
+	 		db.collection("locations").find({}).toArray(function(err,results){
 	 			 if(err){
 	 			 	 res.send({"status":"error","msg":"Error while getting location information"});
 	 			 }else if((results)&&(results.length)){
@@ -105,24 +131,7 @@ var polyline = require('polyline');
 	 			 	  async.each(results,function(eachLocation,callback){
 
 	 			 	  	//   ,"date_time": { $gte:moreTime }
-	 			 	  	db.collection("taxi_location").find({"location_id":eachLocation._id,"isOccupied":false}).toArray(function(err2,taxiResult){
-	 			 	  		if(err2){
-	 			 	  			callback(err2,null);
-	 			 	  		}else{
-	 			 	  			console.log(taxiResult);
-	 			 	  			if((taxiResult)&&(taxiResult.length)){
-	 			 	  				eachLocation.taxies = taxiResult;
-	 			 	  				console.log(eachLocation);
-	 			 	  	 //			taxiResuts.push(eachLocation);
-	 			 	  	 			taxiResults.push(eachLocation);
-	 			 	  			console.log("coming here to if condition");
-	 			 	  			 //	console.log(taxiResult);
-	 			 	  			callback(null,eachLocation);
-	 			 	  		}else{
-	 			 	  			callback(null,null);
-	 			 	  		}
-	 			 	  		}
-	 			 	  	});
+
 	 			 	  },function(err1,eachResult){
 	 			 	  	if(err1){
 	 			 	  		res.send({"status":"error","msg":"error while getting the taxies"});
@@ -135,7 +144,7 @@ var polyline = require('polyline');
 	 			 	res.send({"status":"success","taxies":[]});
 	 			 }
 	 		});
-
+*/
 	 	}else{
 	 		res.send({"status":"error","msg":"Some required information is missing."});
 	 	}
@@ -623,7 +632,7 @@ var polyline = require('polyline');
 	 		if(err){
 	 			res.send({"status":"error","msg":"error while getting steps"});
 	 		}else{
-	 			var decodedData = polyline.decode(stepResult.encripted_line);
+	 			var decodedData = polyline.decode("s}gwF~eibMOAwEUuCMFoCTwK@W@m@");   // stepResult.encripted_line
 	 			res.send({"status":"success","decodedObj":decodedData});
 	 		}
 	 	});
@@ -633,7 +642,7 @@ var polyline = require('polyline');
 	 	var tripData = req.body;
 	 	if((tripData)&&(tripData.startLocation)&&(tripData.startLocation.location)&&(tripData.endLocation)&&(tripData.endLocation.location)&&(tripData.directionsResult)&&(tripData.timeToLeave)&&(tripData.user_id)){
 	 		var tripObj = {};
-	 		tripObj._id = uuid.v4();
+	 		tripObj.type = "Trip";
 	 		tripObj.user_id = tripData.user_id;
 	 		tripObj.startLocation = tripData.startLocation.location;
 	 		tripObj.endLocation = tripData.endLocation.location;
@@ -641,50 +650,69 @@ var polyline = require('polyline');
 	 		tripObj.start_address = tripData.startLocation.full_address;
 	 		tripObj.end_address = tripData.endLocation.full_address;
 	 		tripObj.start_time = moment(tripData.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().format();  // "2015-04-13T06:06:08+00:00"
-	 		tripObj.start_time = moment.utc(tripData.timeToLeave).format();
+	 	 //	tripObj.start_time = moment.utc(tripData.timeToLeave).format();
 	 		tripObj.created_time = moment.utc().format();
-	 		db.collection("trips").findOne({"startLocation":tripObj.startLocation,"endLocation":tripObj.endLocation,"user_id":tripObj.user_id,"start_time":tripObj.created_time},function(errTrip,tripResult){
+	 		db.collection("trips").findOne({"startLocation":tripObj.startLocation,"endLocation":tripObj.endLocation,"user_id":tripObj.user_id,"start_time":tripObj.start_time},function(errTrip,tripResult){
 	 			if(errTrip){
 	 				res.send({"status":"error","msg":"Error while getting the trip results."});
 	 			}else if(tripResult){
-	 				findMatches(tripObj,function(err,matchResults){
+	 				/*findMatches(tripObj,function(err,matchResults){
 	 					if(err){
 	 						res.send({"status":"error","msg":"Error while finding the matching data"});
 	 					}else{
 	 						res.send({"status":"success","matchObj":matchResults});
 	 					}
-	 				});
+	 				});*/
+			res.send({"status":"success","tripObj":tripResult});
 
 	 			}else{
-
-	 		
-	 		tripObj.routes = [];
+	 				tripObj._id = uuid.v4();
+	 		tripObj.Routes = [];
 	 	//	var routes = [];
-	 		async.eachSeries(tripData.directionsResult.routes,function(eachRoute,routeCallback){
+	 		async.eachSeries(tripData.directionsResult,function(eachRoute,routeCallback){
                var routesObj = {};
-               routesObj.encripted_line = eachRoute.overview_polyline;
-               routesObj.legs = [];
+               routesObj.type = "Route";
+               //routesObj.coordinates = eachRoute.overview_polyline;
+               routesObj.Legs = [];
 	 			async.eachSeries(eachRoute.legs,function(eachLeg,legCallback){
 	 				var legObj = {};
+	 				legObj.type = "Leg";
 	 				legObj.startLocation = {"type":"Point","coordinates":[eachLeg.start_location.L,eachLeg.start_location.H]};
 	 				legObj.endLocation = {"type":"Point","coordinates":[eachLeg.end_location.L,eachLeg.end_location.H]};
+	 				legObj.distance = eachLeg.distance;
+	 				legObj.duration = eachLeg.duration;
 	 				legObj.start_address = eachLeg.start_address;
 	 				legObj.end_address = eachLeg.end_address;
-	 				legObj.steps = [];
+	 				legObj.Steps = [];
 	 				async.eachSeries(eachLeg.steps,function(eachStep,stepCallback){
 	 					var stepObj = {};
+	 					stepObj.type = "Step";
+	 					stepObj.distance = eachStep.distance;
+	 					stepObj.duration = eachStep.duration;
 	 					stepObj.startLocation = {"type":"Point","coordinates":[eachStep.start_location.L,eachStep.start_location.H]};
 	 					stepObj.endLocation = {"type":"Point","coordinates":[eachStep.end_location.L,eachStep.end_location.H]};
-	 					stepObj.encripted_line = polyline.points;
-	 					legObj.steps.push(stepObj);
+	 					stepObj.geometry ={};
+	 							stepObj.geometry.type = "MultiLineString";
+	 							stepObj.geometry.coordinates = [];
+	 					decripted_line(eachStep.polyline.points,function(decriptedLine){
+	 						if((decriptedLine)&&(decriptedLine.length)){
+	 							stepObj.geometry.coordinates = decriptedLine;
+	 							legObj.Steps.push(stepObj);
 	 					stepCallback();
+	 						}else{
+	 							//legObj.steps.push(stepObj);
+	 					stepCallback();
+	 						}
+	 					});
+	 				 //	stepObj.encripted_line = polyline.points;
+	 					
 	 				},function(stepErr){
-	 					routesObj.legs.push(legObj);
+	 					routesObj.Legs.push(legObj);
 	 					legCallback();
 	 				});
 
 	 			},function(legErr){
-	 				tripObj.routes.push(routesObj);
+	 				tripObj.Routes.push(routesObj);
 	 				routeCallback();
 	 			});
 	 		},function(errRoute){
@@ -696,7 +724,6 @@ var polyline = require('polyline');
 	 				}
 	 			})
 	 		});
-
 					}
 	 		});
 
@@ -705,8 +732,19 @@ var polyline = require('polyline');
 	 	}
 	 }
 
+	 function decripted_line(poliLine,callback){
+	 	var decodedOutput = polyline.decode(poliLine);
+	 	var changedData = [];
+	 	async.eachSeries(decodedOutput,function(eachLine,decodeCallback){
+	 		changedData.push([eachLine[1],eachLine[0]]);
+	 		decodeCallback();
+	 	},function(err){
+	 		callback(changedData);
+	 	});
+	 }
+
 	 function findMatches(matchObj,callback){
-	 	var distance = 4;
+	 	var distance = 1;
 	 	var start_time = moment(matchObj.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().subtract('10','minutes').format();//matchObj.start_time.subtract('10','minutes').format(); // moment.utc()
 	 	var end_time = moment.utc(matchObj.timeToLeave).add('10','minutes').format();  // moment.utc() 
 	 	db.collection("trips").find({"startLocation":{ $nearSphere : {$geometry: matchObj.startLocation, $maxDistance: (distance * 1000) }},"endLocation":{ $nearSphere : {$geometry: matchObj.endLocation, $maxDistance: (distance * 1000) }},"start_time":{$gte:start_time,$lte:end_time}}).toArray(function(tripErr,tripResults){
@@ -718,6 +756,65 @@ var polyline = require('polyline');
 	 	});
 	 }
 
+	 function findSimillarRoutes(matchData,callback){
+	 	var distance = 1;
+
+	 }
+
+	 function findMatchedTrips(req,res,next){
+	 	var routes = req.body;
+	 	var distance = 1;
+	 	var start_time = moment(routes.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().subtract('10','minutes').format();
+	 	var end_time = moment(routes.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().add('10','minutes').format();
+	 	var resultTrips = [];
+	 	async.parallel({
+	 		start:function(startCallback){
+	 			db.collection("trips").find({"startLocation" : { $nearSphere : {$geometry: routes.startLocation, $maxDistance: (distance * 1000) }}}).toArray(startCallback);
+	 		},
+	 		end:function(endCallback){
+	 			db.collection("trips").find({"endLocation": { $nearSphere : {$geometry: routes.endLocation, $maxDistance: (distance * 1000) }}}).toArray(endCallback);
+	 		}
+	 	},function(errTrip,matchResult){
+	 		console.log(matchResult);
+	 		if(errTrip){
+	 			console.log("Error:--------");
+	 			console.log(errTrip);
+	 			res.send({"status":"error","msg":"Error while getting the trip data"});
+	 		}else if((matchResult)&&(matchResult.start)&&(matchResult.end)&&(matchResult.start.length)&&(matchResult.end.length)){
+	 			var startLocation_ids = underscore.pluck(matchResult.start,'_id');
+	 			var endLocation_ids = underscore.pluck(matchResult.end,'_id');
+	 			console.log(startLocation_ids);
+	 			console.log(endLocation_ids);
+	 			var matchids = underscore.intersection(startLocation_ids,endLocation_ids);
+	 			async.eachSeries(matchids,function(eachMatch_id,tripCallback){
+	 			 var matchObj = underscore.find(matchResult.start, function(obj) { return obj._id == eachMatch_id });
+	 				findUserById(matchObj.user_id,function(err,userResult){
+	 					if(err){
+	 						tripCallback(err);
+	 					}else{
+	 						matchObj.userResult = userResult;
+	 						resultTrips.push(matchObj);
+	 						tripCallback();
+	 					}
+	 				});
+	 			},function(tErr){
+	 				if(tErr){
+	 					res.send({"status":"error","msg":"Error while getting the user information."});
+	 				}else{
+	 					res.send({"status":"success","matches":resultTrips});
+	 				}
+	 			});
+	 		}else{
+	 			res.send({"status":"success","matches":resultTrips});
+	 		}
+	 	});
+	 }
+
+	 function findUserById(user_id,callback){
+	 	db.collection("user").findOne({"_id":user_id},callback);
+	 }
+
+
 	return {
 		searchedLocations:searchedLocations,  // searchedlocation
 		saveUserLocation:saveUserLocation,    // savelocation
@@ -727,7 +824,7 @@ var polyline = require('polyline');
 		findMatchResult:findMatchResult,
 		saveTripData:saveTripData,
 		poliLineDecode:poliLineDecode,
-		saveSearchData:saveSearchData
+		saveSearchData:saveSearchData,
+		findMatchedTrips:findMatchedTrips
 	}
-
 })();

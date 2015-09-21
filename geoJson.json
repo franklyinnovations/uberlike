@@ -1,0 +1,51 @@
+{ "type": "Trip",
+"start_location" : {"type": "Point", "coordinates": [-73.94416129999999, 40.678183]  },
+"end_location" : { "type": "Point", "coordinates": [102.0, 0.5] },
+ "start_address" : "Brooklyn, NY, USA",
+ "end_address" : "Queens, NY, USA",
+  "routes":[
+  {
+  "type":route,
+    "Legs": [
+      { 
+       "type": "Leg",
+       "end_location" : { "type": "Point", "coordinates": [102.0, 0.5] },
+               "start_location" : {"type": "Point", "coordinates": [-73.94416129999999, 40.678183]  },
+              "distance" : {
+                  "text" : "11.2 mi",
+                  "value" : 18026
+               },
+               "duration" : {
+                  "text" : "1 hour 11 mins",
+                  "value" : 4278
+               },
+              "Steps":[
+              {
+                "type":"step",
+                     "distance" : {
+                        "text" : "0.3 mi",
+                        "value" : 455
+                     },
+                     "duration" : {
+                        "text" : "6 mins",
+                        "value" : 338
+                     },
+                     "start_location" : {
+               "type": "Point", "coordinates": [-73.94416129999999, 40.678183]               },
+               "end_location" : {
+                  "type": "Point", "coordinates": [102.0, 0.5]
+               },
+         "geometry": {
+           "type": "MultiLineString",
+           "coordinates": [
+             [ [100.0, 0.0], [101.0, 0.0], [101.0, 1.0],
+               [100.0, 1.0], [100.0, 0.0] ]
+             ]
+         },
+               }
+              ],
+            }
+            ]
+            }
+  ]
+          }

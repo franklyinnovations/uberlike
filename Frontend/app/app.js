@@ -83,12 +83,10 @@ app.config(['$routeProvider',
       //      console.log(userobj);
            var url = next.$$route.originalPath;
            console.log(url);
-           /*
+           
            if(url == "/maplocations"){
 
            } 
-           */
-           /*
            else if(($rootScope.userinfo)&&($rootScope.userinfo._id)&&($rootScope.userinfo.phonenumber)&&($rootScope.userinfo.confirm)&&($rootScope.userinfo.mconfirm)){
            // based on usertype you can redirect to which dashboard.
            if($rootScope.userinfo.usertype == "P"){
@@ -108,9 +106,7 @@ app.config(['$routeProvider',
            }else{
             $location.path("/login");
            }
-           */
-           
-
+          
             if(url == '/mobileconfirm' || url == '/mobilenum'){ // || url == '/dashboard'
                 if($rootScope.userinfo._id){
 

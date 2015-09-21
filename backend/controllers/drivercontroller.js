@@ -54,7 +54,7 @@ var validator = require('validator');
 
 	 function saveTaxiLocation(req,res,next){
 	 	var taxiLocationObj = req.body;
-	 	if((taxiLocationObj)&&(taxiLocationObj.driver_id)&&(taxiLocationObj.location_id)){
+	 	if((taxiLocationObj)&&(taxiLocationObj.driver_id)&&(taxiLocationObj.location)){
 	 		taxiLocationObj._id = uuid.v4();
 	 		taxiLocationObj.date_time = moment.utc().format(); // YYYY-MM-DDTHH:mm:ssZ
 	 		taxiLocationObj.isOccupied = (taxiLocationObj.isOccupied)?taxiLocationObj.isOccupied:false;
