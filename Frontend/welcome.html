@@ -78,5 +78,17 @@
   <script src="app/authCtrl.js"></script>
   <script src="app/mapController.js"></script>
   <script src="app/mapCtrl.js"></script>
+  <script type="text/javascript">
+$(document).ready(function(){
+  $(".ShareRideBtn").live('click',function(ev){
+    alert("button clicked");
+   var data = $(this).children("span").text();
+   angular.element(document.getElementById('ng-view')).scope().shareMessageSend(data);
+   angular.element(document.getElementById('ng-view')).scope().$apply();
+  // console.log(data);
+  });
+});
+
+  </script>
 
 </html>

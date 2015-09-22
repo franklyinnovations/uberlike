@@ -656,7 +656,7 @@ $scope.findMatchData = function(matchdata){
           if(results.status){   //   == "success"
             console.log(results);
           var trips = [];
-          trips = [{"start_address":$scope.fromAddress,"end_address":$scope.toAddress}];//results.matches;
+          trips = results.matches;// [{"start_address":$scope.fromAddress,"end_address":$scope.toAddress}];   //
           $scope.trips = trips;
           $scope.fromMarker.setMap(null);
           var markers = [];
@@ -692,16 +692,20 @@ $scope.findMatchData = function(matchdata){
       map: $scope.map,
       icon: "http://maps.google.com/mapfiles/marker" + String.fromCharCode(markers.length + 65) + ".png"
     })); 
+                    
+       var userObj = {};
+                    userObj.user_id = $rootScope.userinfo._id;
              matchDirectionsDisplay = new google.maps.DirectionsRenderer(rendererOptions);
+             matchDirectionsDisplay.setMap($scope.map);
+             matchDirectionsDisplay.setDirections(resultdata);
              var image = 'http://localhost:3000/images/45b3028e-845b-43fa-9f12-21d47dc80649.jpg'; //trips[i].start_address //trips[i].end_address
                infowindow[i] = new google.maps.InfoWindow({
-    content: '<div><img src="'+image+'">From:'+'Hyderabad'+'<br/>To:'+'begumpeta'+'<button id="'+$rootScope.userinfo._id+'" ng-click="shareMessageSend({user_id:'+$rootScope.userinfo._id+'})">Share</button></div>'
+    content: '<div><img src="'+image+'">From:'+'Hyderabad'+'<br/>To:'+'begumpeta'+'<button class="ShareRideBtn" id="'+$rootScope.userinfo._id+'" ng-click="shareMessageSend({user_id:'+$rootScope.userinfo._id+'})">Share<span style="display:none">'+userObj+'</span></button></div>'
   });                
                markers[i].addListener('click', function() {
     infowindow[i].open($scope.map, markers[i]);
   });
-             matchDirectionsDisplay.setMap($scope.map);
-             matchDirectionsDisplay.setDirections(resultdata);
+             $scope.$apply();
            }else{
             alert("Failed to get google maps direction");
            }

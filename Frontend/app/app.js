@@ -89,11 +89,14 @@ app.config(['$routeProvider',
            } 
            else if(($rootScope.userinfo)&&($rootScope.userinfo._id)&&($rootScope.userinfo.phonenumber)&&($rootScope.userinfo.confirm)&&($rootScope.userinfo.mconfirm)){
            // based on usertype you can redirect to which dashboard.
-           if($rootScope.userinfo.usertype == "P"){
+           if($cookieStore.get('redirectUrl')){
+            $window.location.href = $cookieStore.get('redirectUrl');
+           }else if($rootScope.userinfo.usertype == "P"){
                 $location.path("/dashboard");
            }else{
                 $location.path("driverdashboard");
            }
+           
            }else if(!(($rootScope.userinfo)&&($rootScope.userinfo._id))){
             $location.path("/");
            }else if(!($rootScope.userinfo.confirm)){

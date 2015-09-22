@@ -5,6 +5,8 @@ var passengercontroller = require('../controllers/passengercontroller');
 var router = express.Router();
 //console.log(moment().format('YYYY-MM-DD'));
 router.get('/', function(req, res, next) {
+	console.log("I am from requested url "+req.url);
+	console.log(req.url);
     res.send({"status":"error","msg":"I am from users"});
 });
 
@@ -27,5 +29,7 @@ router.post('/decoded/polyline',passengercontroller.poliLineDecode);
 router.post('/searched/trip',passengercontroller.saveSearchData);
 
 router.post('/match/trips',passengercontroller.findMatchedTrips);
+
+router.post('/send/sharemessage',passengercontroller.sendShareMessage);
 
 module.exports = router;

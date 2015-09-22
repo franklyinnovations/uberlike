@@ -16,7 +16,7 @@ var polyline = require('polyline');
  //console.log("passenger moment");
  //console.log(moment("2015-04-13T06:06:08+00:00","YYYY-MM-DDTHH:mm:ssZ").utc().format());
 
-
+var host = "http://localhost";
 	function searchedLocations(req,res,next){
 	var locationData = req.body;
 	if((locationData)&&(locationData.user_id)&&(locationData.present_lat)&&(locationData.present_lng)&&(locationData.dest_lat)&&(locationData.dest_lng)&&(locationData.time)){
@@ -98,7 +98,8 @@ var polyline = require('polyline');
 
 	 	 	db.collection("taxi_location").find({"location" : { $nearSphere : {$geometry: {type : "Point",coordinates : fromLocation.coordinates}, $maxDistance: (distance * 1000) }},"isOccupied":false}).toArray(function(err2,taxiResult){
 	 			 	  		if(err2){
-	 			 	  			callback(err2,null);
+	 			 	  			res.send({"status":"error","msg":"error while finding taxi location"});
+	 			 	  		//	callback(err2,null);
 	 			 	  		}else{
 	 			 	  			console.log(taxiResult);
 	 			 	  			if((taxiResult)&&(taxiResult.length)){
@@ -801,6 +802,7 @@ var polyline = require('polyline');
 	 				if(tErr){
 	 					res.send({"status":"error","msg":"Error while getting the user information."});
 	 				}else{
+
 	 					res.send({"status":"success","matches":resultTrips});
 	 				}
 	 			});
@@ -814,6 +816,151 @@ var polyline = require('polyline');
 	 	db.collection("user").findOne({"_id":user_id},callback);
 	 }
 
+	 function sendShareMessage(req,res,next){
+	 	var shareData = req.body;
+	 	if(shareData.trip_id){
+	 		var trip_id = shareData.trip_id;
+	 		var user_id = shareData.user_id;
+	 		db.collection("match_share").findOne({"trip_id":trip_id,"user_id":user_id},function(errMatch,MatchResults){
+	 			if(errMatch){
+	 				res.send({"status":"error","msg":"error while finding the result"});
+	 			}else if(MatchResults){
+	 				res.send({"status":"error","msg":"You already sended request to these user"});
+	 			}else{
+	 				db.collection("trips").findOne({"_id":shareData.trip_id},function(errr,tripDetails){
+	 		if(errr){
+	 			res.send({"status":"error","msg":"error while getting the trip data."});
+	 		}else if(tripDetails){
+	 			findUserById(tripDetails.user_id,function(userErr,userResult){
+	 				if(userErr){
+	 					res.send({"status":"error","msg":"error while getting the user information"});
+	 				}else if(userResult){
+	 					var matchObj = {};
+	 					matchObj._id = uuid.v4();
+	 					matchObj.trip_id = tripDetails._id;
+	 					matchObj.user_id = shareData.user_id;
+	 					console.log(tripDetails.start_address);
+	 					console.log(tripDetails.end_address);
+	 					var fromResult = tripDetails.start_address.split(",");
+	 					var toResult = tripDetails.end_address.split(",");
+	 					var url = host+"/"+fromResult[fromResult.length - 3]+"/share-taxi/"+fromResult[fromResult.length - 4]+"-"+toResult[toResult.length - 4]+"/"+matchObj._id;
+	 					async.parallel({
+	 						sms:function(smsCallback){
+	 							var messagetext = "Dear "+userResult.username+"Some one want's to share your taxi between"+fromResult[fromResult.length - 4]+" to "+toResult[toResult.length - 4]+"follow url "+url;
+     		 	 var mobilenumber = userResult.phonenumber; 
+     		 	 sms(mobilenumber,messagetext,smsCallback);
+	 						},
+	 						email:function(emailCallback){
+	 							var emailValues={};
+     	emailValues.username = userResult.username;
+     //	emilValues.email = data.email;
+     emailValues.from = tripDetails.start_address;
+     emailValues.to = tripDetails.end_address;
+     emailValues.start_time = tripDetails.start_time;
+     emailValues.url = url;
+     //	console.log(emilValues);
+     	app.render("share-ride",emailValues,function(error,html){
+     		if(error){
+     			console.log(error,html);
+     			emailCallback(error,null);
+     		}else{
+     			var emailDetails = {};
+     		emailDetails.email = userResult.email;
+     		emailDetails.html = html;//"conform mail by click <a href="+emilValues.conformationlink+">here</a>";//html;
+     		emailDetails.subject = "Share Your trip";
+     		 email(emailDetails,emailCallback);
+	 						}
+	 					});
+     }
+	 					},function(err,sendResult){
+	 						if(err){
+	 							console.log(err);
+	 							res.send({"status":"error","msg":"Error while sending details sms and email"});
+	 						}else{
+
+	 							db.collection("match_share").insert(matchObj,function(matchErr,matchResult){
+	 								if(matchErr){
+	 									res.send({"status":"error","msg":"Error in match result"});
+	 								}else{
+	 									res.send({"status":"success","msg":"you'r share request is processed"});
+	 								}
+	 							});
+	 						}
+
+	 					});
+	 				}else{
+	 					res.send({"status":"error","msg":"user does not exists."});
+	 				}
+	 			});
+	 		}else{
+	 			res.send({"status":"error","msg":"trip does not exists"});
+	 		}
+	 	});
+	 			}
+	 		})
+	 	
+	 	}else{
+	 		res.send({"status":"error","msg":"Trip data is missing"});
+	 	} 
+	 }
+
+	 function contactPage(req,res,next){
+	 	var match_id = req.params.match_id;
+	 	if(match_id){
+	 		db.collection("match_share").findOne({"_id":match_id},function(matchErr,shareResults){
+	 			if(matchErr){
+	 				res.send({"status":"error","msg":"error while getting the information"});
+	 			}else if(shareResults){
+	 				async.parallel({
+	 					shareUser:function(shareCallback){
+	 						db.collection("user").findOne({"_id":shareResults.user_id},shareCallback);
+	 					},
+	 					tripUser:function(tripCallback){
+	 						db.collection("trips").findOne({"_id":shareResults.trip_id},function(tripErr,tripResult){
+	 							if(tripErr){
+	 								tripCallback(tripErr,null);
+	 							}else if(tripResult){
+	 								db.collection("user").findOne({"_id":tripResult.user_id},function(uErr,userResult){
+	 									if(uErr){
+	 										tripCallback(uErr,null);
+	 									}else if(userResult){
+	 										var tripObj = {};
+	 										tripObj = tripResult;
+	 										tripObj.userObj = userResult;
+	 										tripCallback(null,tripObj);
+	 									}
+	 								})
+	 							}else{
+	 								tripCallback(null,null);
+	 							}
+	 						});
+	 					}
+	 				},function(shareErr,matchedInfo){
+	 					if(shareErr){
+	 						res.send({"status":"error","msg":"Error while getting the requested user information"});
+	 					}else if((matchedInfo)&&(matchedInfo.shareUser)&&(matchedInfo.tripUser)){
+	 						var redirectUrl = req.url;
+	 						console.log(redirectUrl);
+	 						if(req.cookies.redirectUrl){
+	 							res.clearCookie('redirectUrl');
+	 						}
+	 						if(req.cookies.user){
+	 							res.render('share-result',matchedInfo);
+	 						}else{
+	 							res.cookie('redirectUrl',redirectUrl);
+	 							res.redirect("/");
+	 						}
+
+	 					}
+	 				});
+	 			}else{
+	 				res.send({"status":"error","msg":"your requested url does not match"});
+	 			}
+	 		});
+	 	}else{
+	 		res.send({"status":"error","msg":"Some match information is missing"});
+	 	}
+	 }
 
 	return {
 		searchedLocations:searchedLocations,  // searchedlocation
@@ -825,6 +972,7 @@ var polyline = require('polyline');
 		saveTripData:saveTripData,
 		poliLineDecode:poliLineDecode,
 		saveSearchData:saveSearchData,
-		findMatchedTrips:findMatchedTrips
+		findMatchedTrips:findMatchedTrips,
+		sendShareMessage:sendShareMessage
 	}
 })();

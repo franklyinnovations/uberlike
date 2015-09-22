@@ -1,15 +1,25 @@
 var nodemailer = require('nodemailer');
+var smtpTransport = require('nodemailer-smtp-transport');
 
 module.exports = function sendEmail(options,callback) {
 
-    var transporter = nodemailer.createTransport('SMTP',{
-        service: 'Gmail',
-        port:25,
+    var transporter = nodemailer.createTransport(smtpTransport({
+      //  service: 'Gmail',
+      /*
+        host:'smtp.gmail.com',
+        port:465,
+        */
+          transport: "SMTP",
+    host: "smtp.gmail.com",
+    secureConnection: false,
+    port: 587,
+    requiresAuth: true,
+    domains: ["gmail.com", "googlemail.com"],
         auth: {
             user: 'titaniumstudio0@gmail.com',
             pass: '92901529'
         }
-    });
+    }));
 
     var mailOptions = {
         from: "titaniumstudeio0@gmail.com", // sender address 
