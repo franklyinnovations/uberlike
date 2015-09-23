@@ -55,26 +55,13 @@ if(err){
 	user.image_url = result._id+'.jpg';
 	var image_base = data.photos[0].value;
 	}
-	/*
-	download(image_base,user.image_url,function(){
-	console.log("Successfully downloaded provider image");
-})
-*/
 	console.log("cookie setting-------from existing accont");
 
 	download(image_base,user.image_url,function(){
 	console.log("Successfully downloaded provider image");
 });
 	res.cookie('user', JSON.stringify(result));
-	/*
-	if(phonenumber){
-		res.redirect('http://localhost/#/');
-	}else{
-		res.redirect('http://localhost/#/mobilenum');
-	}
-	*/
 	res.redirect('/');
-   // res.send({"status":"success","msg":"user login successfully","userdata":result});
 }else{
 	user._id = uuid.v4();
 	if(data.provider=="google"){	
@@ -84,15 +71,12 @@ user.username = data.displayName;
 user.provider_id = data.id;
 user.image_url = user._id+'.jpg';
 var image_base = data.photos[0].value;
-//user.type = "P";
 }else{
 user.provider = "F";
 user.username = data.name.givenName+" "+data.name.familyName;
 user.provider_id = data.id;
 user.image_url = user._id+'.jpg';
 var image_base = data.photos[0].value;
- // user.image_url ;
-//user.type="P";
 }
 download(image_base,user.image_url,function(){
 	console.log("Successfully downloaded provider image");
@@ -108,11 +92,9 @@ user.phonenumber = "";
 		if(err1){
 			res.send({"status":"error","msg":"error while inserting the user data"});
 		}else{
-		 	//user = JSON.stringify(user);
 		 	console.log("cookie setting ---------from new account");
 			res.cookie('user',JSON.stringify(user));
 			res.redirect('/');
-		//	res.send({"status":"success","msg":"user registered success fully","userdata":user});
 		}
 	});
 }
@@ -326,7 +308,6 @@ if(userInfo.email){
   			res.send({"status":"success","msg":"Email send to "+userInfo.email+" successfully."});
   		}
   	});
-  //   		 		res.send({"status":"success","msg":"mail send successfully"});
      		 	}
      		 });
      		}
@@ -882,6 +863,8 @@ var toLocationObj = {};
 	})
 }
 
+
+
 return {
  oauthLoginHandler:oauthLoginHandler,
  controle:controle,
@@ -900,5 +883,4 @@ return {
  saveCsvFileData:saveCsvFileData,
  saveLocationData:saveLocationData
 }
-
 })();

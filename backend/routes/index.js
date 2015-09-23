@@ -22,6 +22,8 @@ console.log(id);
 
 var useroperations = require('../controllers/useroperations');
 
+var passengercontroller = require('../controllers/passengercontroller');
+
 
 console.log("utc time is:"+moment.utc());
 console.log("utc formate date and time after 4 hours is:"+moment.utc().add(4, 'hours').format('YYYY-MM-DD HH:mm:ss'));
@@ -92,102 +94,11 @@ router.post('/verify/mobile',useroperations.verifyMobileNumber);  // verifymobil
 router.post('/reset/password',useroperations.resetPasswd); // resetpasswd
 
 router.get('/readcsv',useroperations.saveCsvFileData);
+
 router.get('/storecsvdata',useroperations.saveLocationData);
 
+router.get('/:city_location/share-taxi/:trip_address/:match_id',passengercontroller.contactPage);
 
-   // /*var fileData = fs.readFileSync*/ 
-    /*
-    fs.readFile(__dirname+'/../routeData1.csv','utf8',function(err,fileData){
-        if(err){
-           // console.log("I am from error");
-           res.send({"status":"error","errmsg":err});
-        }else{
-                console.log(fileData);
-                var arrdata = fileData.split(",");
-                arrdata.forEach(function(eachData,index){
-                    console.log(eachData);
-                    console.log(index);
-                });
-    res.send(arrdata);
-        }
-    });
-*/
-
-/*
-var fs = require('fs');
-var parse = require('csv-parse');
-var async = require('async');
-
-var inputFile=__dirname+'/../routeData1.csv';//'myfile.csv';
-
-var parser = parse({delimiter: ','}, function (err, data) {
-  async.eachSeries(data, function (line, callback) {
-    console.log("line data"+line);
-  callback();
-  });
-})
-fs.createReadStream(inputFile).pipe(parser);
-*/
-    // do something with the line
-    /*
-    doSomething(line).then(function() {
-      // when processing finishes invoke the callback to move to the next one
-      callback();
-    });
-  */
-
-/*
-function sendemail(options,callback){
-var transporter = nodemailer.createTransport({
-    service: 'Gmail',
-    auth: {
-        user: 'titaniumstudio0@gmail.com',
-        pass: '92901529'
-    }
-});
-var mailOptions = {
-    from: "titaniumstudeio0@gmail.com", // sender address 
-    to: options.email, // list of receivers 
-    subject: options.subject, // Subject line 
-   // text: 'Hello world ✔', // plaintext body 
-    html: options.html//'<b>Hello world ✔</b>' // html body 
-};
-
-transporter.sendMail(mailOptions, function(error, info){
-    if(error){
-       
-       // return console.log(error);
-    	callback(error,null);
-    }else{
-    console.log(info);
- 		callback(null,info);
- 		}
-});
-*/
-/*
-	var passeddata={};
-     	passeddata.username = user.username;
-     //	passeddata.email = data.email;
-     	passeddata.conformationlink = host+"/conf/user/"+confirmid;
-     	app.render("register-mail",passeddata,function(error,html){
-     		if(error){
-     			console.log(error,html);
-     			res.send({"status":"error","msg":"mail sending failed."});
-     		}else{
-     			var optionaldata = {};
-     		optionaldata.email = user.email;
-     		optionaldata.html = html;//"conform mail by click <a href="+passeddata.conformationlink+">here</a>";//html;
-     		optionaldata.subject = "Registartion Conformation mail";
-     		mail(optionaldata,function(err,success){
-     		 	if(err){
-     		 		res.send({"status":"error","msg":"mail sending to user is failed"});
-     		 	}else{
-     		 		
-     		 	}
-     		 });
-     	}
-     });
-     	*/
 
 /* twillow messaging test */
 router.get("/send/test/message",function(req,res){

@@ -9,7 +9,7 @@ passport= require('passport');
 var mongo = require('mongoskin');
 db = mongo.db("mongodb://localhost:27017/uberlikedb");
 var routes = require('./routes/index');
-var users = require('./routes/users');
+// var users = require('./routes/users');
 var passengers = require('./routes/passengers');
 var drivers = require('./routes/drivers');
 var login = require('./services/login');
@@ -68,7 +68,7 @@ passport.serializeUser(function(user, done) {
 
 app.use('/', routes);
 app.use('/',login);
-app.use('/users', users);
+// app.use('/users', users);
 app.use('/drivers',drivers);
 app.use('/passengers',passengers);
 

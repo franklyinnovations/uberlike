@@ -1,4 +1,4 @@
-app.controller('mapController',function ($scope, $rootScope, $routeParams, $location, $http,$cookieStore,$interval,Data) {
+app.controller('mapController',function ($scope, $rootScope, $routeParams, $location, $http,$cookieStore,$interval,$compile,Data) {
 var placeSearch, autocomplete,fromAutocomplete;
 $scope.map;
 $scope.position = $scope.position||{};
@@ -666,6 +666,14 @@ $scope.findMatchData = function(matchdata){
     }
           for(var i =0;i<trips.length;i++){
 
+               var image = 'http://localhost:3000/images/45b3028e-845b-43fa-9f12-21d47dc80649.jpg'; //trips[i].start_address //trips[i].end_address
+               var userObj = {};
+                    userObj.user_id = $rootScope.userinfo._id;
+                    // {user_id:'+$rootScope.userinfo._id+'} 
+               infowindow.push (new google.maps.InfoWindow({
+    content: $compile('<div><img src='+image+'>From:'+'Hyderabad'+'<br/>To:'+'begumpeta'+'<button class="ShareRideBtn" id='+$rootScope.userinfo._id+' ng-click=shareMessageSend()>Share<span style="display:none">'+'hi text message'+'</span></button></div>')($scope)[0].outerHTML
+  }));                
+
             directionsService.route({
        origin: trips[i].start_address,//routes[i].start_location_info.full_address, //start,//data.from,//
        destination: trips[i].end_address,//routes[i].end_location_info.full_address, // end,// data.destination,
@@ -693,19 +701,15 @@ $scope.findMatchData = function(matchdata){
       icon: "http://maps.google.com/mapfiles/marker" + String.fromCharCode(markers.length + 65) + ".png"
     })); 
                     
-       var userObj = {};
-                    userObj.user_id = $rootScope.userinfo._id;
+       
              matchDirectionsDisplay = new google.maps.DirectionsRenderer(rendererOptions);
              matchDirectionsDisplay.setMap($scope.map);
              matchDirectionsDisplay.setDirections(resultdata);
-             var image = 'http://localhost:3000/images/45b3028e-845b-43fa-9f12-21d47dc80649.jpg'; //trips[i].start_address //trips[i].end_address
-               infowindow[i] = new google.maps.InfoWindow({
-    content: '<div><img src="'+image+'">From:'+'Hyderabad'+'<br/>To:'+'begumpeta'+'<button class="ShareRideBtn" id="'+$rootScope.userinfo._id+'" ng-click="shareMessageSend({user_id:'+$rootScope.userinfo._id+'})">Share<span style="display:none">'+userObj+'</span></button></div>'
-  });                
-               markers[i].addListener('click', function() {
-    infowindow[i].open($scope.map, markers[i]);
+          
+               markers[markers.length - 2].addListener('click', function() {
+    infowindow[((markers.length)/2) -1].open($scope.map, markers[markers.length - 2]);
+    $scope.$apply();
   });
-             $scope.$apply();
            }else{
             alert("Failed to get google maps direction");
            }
@@ -719,7 +723,7 @@ $scope.findMatchData = function(matchdata){
         });
 }
 
-$scope.shareMessageSend = function(data){
+$scope.shareMessageSend = function(){
   console.log("share message");
   console.log(data);
 }

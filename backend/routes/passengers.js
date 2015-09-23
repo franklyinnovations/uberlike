@@ -10,19 +10,19 @@ router.get('/', function(req, res, next) {
     res.send({"status":"error","msg":"I am from users"});
 });
 
-router.post('/search/destination',passengercontroller.searchedLocations);
+ // router.post('/search/destination',passengercontroller.searchedLocations);
 
-router.post('/savesearch',passengercontroller.saveUserLocation);
+ // router.post('/savesearch',passengercontroller.saveUserLocation);
 
-router.post('/setlocation',passengercontroller.setLocation);
+ // router.post('/setlocation',passengercontroller.setLocation);
 
 router.post('/avilabletaxies',passengercontroller.findNearTaxies);
 
-router.post('/saveroute',passengercontroller.saveRouteInfo);
+ // router.post('/saveroute',passengercontroller.saveRouteInfo);
 
-router.post('/findmatchroutes',passengercontroller.findMatchResult);
+ // router.post('/findmatchroutes',passengercontroller.findMatchResult);
 
-router.post('/savetrip',passengercontroller.saveTripData);
+ // router.post('/savetrip',passengercontroller.saveTripData);
 
 router.post('/decoded/polyline',passengercontroller.poliLineDecode);
 
@@ -31,5 +31,7 @@ router.post('/searched/trip',passengercontroller.saveSearchData);
 router.post('/match/trips',passengercontroller.findMatchedTrips);
 
 router.post('/send/sharemessage',passengercontroller.sendShareMessage);
+
+router.post('/search/matches',passengercontroller.searchData);
 
 module.exports = router;
