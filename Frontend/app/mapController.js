@@ -12,12 +12,19 @@ $scope.marker;
 $scope.toMarker;
 $scope.fromMarker;
 $scope.markers = [];
+$scope.trips = [];
+$scope.tripObjs = [];
 $scope.fromLocation = {};
 $scope.toLocation = {};
+$scope.hostName = 'http://localhost';
 var directionsDisplay;  // new google.maps.DirectionsRenderer();
 var directionsService;  // new google.maps.DirectionsService();
 
+console.log($scope.host);
+
 console.log(parseFloat(geoplugin_latitude()));
+
+
 $scope.initAutocomplete = function () {
 	console.log("this function called");
    $scope.map = new google.maps.Map(document.getElementById('map'), {
@@ -527,6 +534,7 @@ if(results.status == "success"){
 
 Data.post('/passengers/avilabletaxies',passengerSearch).then(function(results){
 // /passengers/avilabletaxies
+    console.log(results);
 if(results.status == "success"){
   console.log(results);
 
@@ -538,13 +546,7 @@ if(results.status == "success"){
     driverPosition.lng = coordinates[0];
     var driverMarker = setMarker(driverPosition,'Driver location');
   }
-}else{
-  console.log("I am from elase bloack failed to get the results");
-}
-
-});
-
-var start = new google.maps.LatLng(pos.lat,pos.lng);
+  var start = new google.maps.LatLng(pos.lat,pos.lng);
  var end = new google.maps.LatLng(destination.lat,destination.lng);
  console.log("from:"+$scope.fromAddress);
  console.log("to:"+$scope.toAddress);
@@ -590,7 +592,18 @@ routeObj.endLocationAddress = $scope.toAddress;
                 alert(results.msg);
               }
             }); 
-           /*
+          
+           }else{
+            alert("Failed to get google maps direction");
+           }
+         });
+}else{
+  console.log("I am from elase bloack failed to get the results");
+}
+
+});
+
+        /*
             Data.post('/passengers/savetrip',tripDetails).then(function(results){
               if(results.status == "success"){
                 console.log(results);
@@ -618,11 +631,7 @@ routeObj.endLocationAddress = $scope.toAddress;
               subroutes.push(subObj);
             }
             console.log(subroutes);
-            */
-           }else{
-            alert("Failed to get google maps direction");
-           }
-         });  
+            */    
 }
 
 $scope.findMatchData = function(matchdata){
@@ -659,19 +668,25 @@ $scope.findMatchData = function(matchdata){
           trips = results.matches;// [{"start_address":$scope.fromAddress,"end_address":$scope.toAddress}];   //
           $scope.trips = trips;
           $scope.fromMarker.setMap(null);
-          var markers = [];
+          var markers = [];                //          $compile()($scope)[0].outerHTML
           var infowindow = [];
             for (var j = 0; j < $scope.markers.length; j++) {
       $scope.markers[j].setMap(null);
     }
           for(var i =0;i<trips.length;i++){
-
-               var image = 'http://localhost:3000/images/45b3028e-845b-43fa-9f12-21d47dc80649.jpg'; //trips[i].start_address //trips[i].end_address
-               var userObj = {};
-                    userObj.user_id = $rootScope.userinfo._id;
-                    // {user_id:'+$rootScope.userinfo._id+'} 
-               infowindow.push (new google.maps.InfoWindow({
-    content: $compile('<div><img src='+image+'>From:'+'Hyderabad'+'<br/>To:'+'begumpeta'+'<button class="ShareRideBtn" id='+$rootScope.userinfo._id+' ng-click=shareMessageSend()>Share<span style="display:none">'+'hi text message'+'</span></button></div>')($scope)[0].outerHTML
+                      //   image_url
+               var image = $scope.hostName+'/images/'+trips[i].userResult.image_url;//'http://localhost:3000/images/45b3028e-845b-43fa-9f12-21d47dc80649.jpg'; //trips[i].start_address //trips[i].end_address
+               var tripObj = {};
+               tripObj.trip_id = trips[i]._id;
+               tripObj.user_id =  $rootScope.userinfo._id; // trips[i].user_id;
+               var start = trips[i].start_address;
+               var end = trips[i].end_address;
+               var startArr = start.split(",");
+               var endArr = end.split(",");
+                    // {user_id:'+$rootScope.userinfo._id+'}
+                    $scope.tripObjs.push(tripObj);
+                               infowindow.push (new google.maps.InfoWindow({
+    content: '<div><img src='+image+'>From:'+startArr[startArr.length - 4]+'<br/>To:'+endArr[endArr.length - 4]+'<button class="ShareRideBtn" id='+($scope.tripObjs.length -1)+' ng-click=shareMessageSend()>Share<span style="display:none">'+'hi text message'+'</span></button></div>'
   }));                
 
             directionsService.route({
@@ -705,11 +720,21 @@ $scope.findMatchData = function(matchdata){
              matchDirectionsDisplay = new google.maps.DirectionsRenderer(rendererOptions);
              matchDirectionsDisplay.setMap($scope.map);
              matchDirectionsDisplay.setDirections(resultdata);
-          
-               markers[markers.length - 2].addListener('click', function() {
-    infowindow[((markers.length)/2) -1].open($scope.map, markers[markers.length - 2]);
+             console.log("markers length is:");
+             var length = markers.length;
+             console.log(length);
+          /*
+          for(var k =0; k < markers.length;k=k+2){
+            markers[k].addListener('click',function(){
+              infowindow[k/2].open($scope.map,markers[k]);
+            });
+          }
+          */
+               markers[length - 2].addListener('click', function() {
+    infowindow[((length)/2) -1].open($scope.map, markers[length - 2]);
     $scope.$apply();
   });
+
            }else{
             alert("Failed to get google maps direction");
            }
@@ -723,8 +748,18 @@ $scope.findMatchData = function(matchdata){
         });
 }
 
-$scope.shareMessageSend = function(){
+$scope.shareMessageSend = function(triplength){
+  var num = triplength.num;
   console.log("share message");
-  console.log(data);
+ // console.log(data);
+  console.log($scope.tripObjs[num]);
+  var tripObj = $scope.tripObjs[num];
+  Data.post('/passengers/send/sharemessage',tripObj).then(function(results){
+    if(results.status == "success"){
+      alert("Message and Email sended successfully.");
+    }else{
+      alert(results.msg);
+    }
+  });
 }
 });

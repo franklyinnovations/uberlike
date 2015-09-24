@@ -29,17 +29,18 @@ var host = "http://localhost";
 	 	if((fromLocation)&&(fromLocation.coordinates)){
 	 		var distance = fromLocation.distance || 1; // 10
 	 	 //	var withInTime = moment.utc().add(5, 'minutes').format('YYYY-MM-DDTHH:mm:ss');
-	 	 var taxiResults = [];
+	     //  var taxiResults = [];
 	 	 	var moreTime = moment.utc().subtract('5','minutes').format(); // YYYY-MM-DDTHH:mm:ssZ
 
 	 	 	db.collection("taxi_location").find({"location" : { $nearSphere : {$geometry: {type : "Point",coordinates : fromLocation.coordinates}, $maxDistance: (distance * 1000) }},"isOccupied":false}).toArray(function(err2,taxiResult){
 	 			 	  		if(err2){
+	 			 	  			console.log(err2);
 	 			 	  			res.send({"status":"error","msg":"error while finding taxi location"});
 	 			 	  		//	callback(err2,null);
 	 			 	  		}else{
 	 			 	  			console.log(taxiResult);
 	 			 	  			if((taxiResult)&&(taxiResult.length)){
-	 			 	  		 res.send({"status":"success","taxies":taxiResults});
+	 			 	  		 res.send({"status":"success","taxies":taxiResult});
 	 			 	  		}else{
 	 			 	  		 //	callback(null,null);
 	 			 	  		 res.send({"status":"success","taxies":[]});
@@ -241,7 +242,7 @@ var host = "http://localhost";
 	 	if(shareData.trip_id){
 	 		var trip_id = shareData.trip_id;
 	 		var user_id = shareData.user_id;
-	 		db.collection("match_share").findOne({"trip_id":trip_id,"user_id":user_id},function(errMatch,MatchResults){
+	 		db.collection("matches").findOne({"trip_id":trip_id,"user_id":user_id},function(errMatch,MatchResults){
 	 			if(errMatch){
 	 				res.send({"status":"error","msg":"error while finding the result"});
 	 			}else if(MatchResults){
@@ -298,7 +299,7 @@ var host = "http://localhost";
 	 							res.send({"status":"error","msg":"Error while sending details sms and email"});
 	 						}else{
 
-	 							db.collection("match_share").insert(matchObj,function(matchErr,matchResult){
+	 							db.collection("matches").insert(matchObj,function(matchErr,matchResult){
 	 								if(matchErr){
 	 									res.send({"status":"error","msg":"Error in match result"});
 	 								}else{
@@ -327,16 +328,50 @@ var host = "http://localhost";
 	 function contactPage(req,res,next){
 	 	var match_id = req.params.match_id;
 	 	if(match_id){
-	 		db.collection("match_share").findOne({"_id":match_id},function(matchErr,shareResults){
+	 		db.collection("matches").findOne({"_id":match_id},function(matchErr,shareResults){
 	 			if(matchErr){
 	 				res.send({"status":"error","msg":"error while getting the information"});
 	 			}else if(shareResults){
-	 				async.parallel({
+	 				db.collection("user").findOne({"_id":shareResults.user_id},function(userErr,userResult){
+	 					if(userErr){
+	 						res.send({"status":"error","msg":"Error while getting user info"});
+	 					}else if(userResult){
+	 						shareResults.shareUser = userResult;
+	 						shareResults.imageUrl = host+'/images/'+userResult.image_url;
+	 						var redirectUrl = req.url;
+	 						console.log(redirectUrl);
+	 						if(req.cookies.redirectUrl){
+	 							res.clearCookie('redirectUrl');
+	 						}
+	 						if(req.cookies.user){
+                                shareResults.layout = 'share-contact';
+	 					  //		matchedInfo.layout = 'share-contact';
+	 							res.render('share-result',shareResults);
+	 						}else{
+	 							res.cookie('redirectUrl',redirectUrl);
+	 							res.redirect("/");
+	 						}
+	 					}else{
+	 						res.send({"status":"error","msg":"User does not exists"});
+	 					}
+	 				});
+	 			}else{
+	 				res.send({"status":"error","msg":"your requested url does not match"});
+	 			}
+	 		});
+	 	}else{
+	 		res.send({"status":"error","msg":"Some match information is missing"});
+	 	}
+	 }
+
+	 function getMatchShareUserInfo(req,res,next){
+	 	var shareObj = req.body;
+	 	async.parallel({
 	 					shareUser:function(shareCallback){
-	 						db.collection("user").findOne({"_id":shareResults.user_id},shareCallback);
+	 						db.collection("user").findOne({"_id":shareObj.user_id},shareCallback);
 	 					},
 	 					tripUser:function(tripCallback){
-	 						db.collection("trips").findOne({"_id":shareResults.trip_id},function(tripErr,tripResult){
+	 						db.collection("trips").findOne({"_id":shareObj.trip_id},function(tripErr,tripResult){
 	 							if(tripErr){
 	 								tripCallback(tripErr,null);
 	 							}else if(tripResult){
@@ -359,27 +394,9 @@ var host = "http://localhost";
 	 					if(shareErr){
 	 						res.send({"status":"error","msg":"Error while getting the requested user information"});
 	 					}else if((matchedInfo)&&(matchedInfo.shareUser)&&(matchedInfo.tripUser)){
-	 						var redirectUrl = req.url;
-	 						console.log(redirectUrl);
-	 						if(req.cookies.redirectUrl){
-	 							res.clearCookie('redirectUrl');
-	 						}
-	 						if(req.cookies.user){
-	 							res.render('share-result',matchedInfo);
-	 						}else{
-	 							res.cookie('redirectUrl',redirectUrl);
-	 							res.redirect("/");
-	 						}
-
+	 						res.send({"status":"success","shareObj":matchedInfo});
 	 					}
 	 				});
-	 			}else{
-	 				res.send({"status":"error","msg":"your requested url does not match"});
-	 			}
-	 		});
-	 	}else{
-	 		res.send({"status":"error","msg":"Some match information is missing"});
-	 	}
 	 }
 
 	 // directions url : // 'https://maps.googleapis.com/maps/api/directions/json?origin=hiihi&destination=ihihih&waypoints=iigihi&key=AIzaSyDVksvEMbTZTClxjY-touspszFsJSutiIY';
@@ -702,6 +719,7 @@ if(matchErr){
 		findMatchedTrips:findMatchedTrips,
 		sendShareMessage:sendShareMessage,
 		contactPage:contactPage,
-		searchData:searchData
+		searchData:searchData,
+		getMatchShareUserInfo:getMatchShareUserInfo
 	}
 })();

@@ -34,4 +34,6 @@ router.post('/send/sharemessage',passengercontroller.sendShareMessage);
 
 router.post('/search/matches',passengercontroller.searchData);
 
+router.post('/sharedcontact/userinfo',passengercontroller.getMatchShareUserInfo);
+
 module.exports = router;

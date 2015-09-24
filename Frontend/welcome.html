@@ -79,17 +79,18 @@
   <script src="app/mapController.js"></script>
   <script src="app/mapCtrl.js"></script>
   <script type="text/javascript">
-/*
 $(document).ready(function(){
   $(".ShareRideBtn").live('click',function(ev){
-    alert("button clicked");
-   var data = $(this).children("span").text();
-   angular.element(document.getElementById('ng-view')).scope().shareMessageSend(data);
+  //  alert("button clicked");
+ //  var data = $(this).children("span").text();
+    var num  = $(this).attr('id');
+  //   alert(id);
+   angular.element(document.getElementById('ng-view')).scope().shareMessageSend({'num':num});
    angular.element(document.getElementById('ng-view')).scope().$apply();
   // console.log(data);
   });
 });
-*/
+
 
   </script>
 
