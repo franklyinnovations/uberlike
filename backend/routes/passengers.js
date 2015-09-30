@@ -1,7 +1,7 @@
 var express = require('express');
 var uuid = require('node-uuid');
 var moment = require('moment');
-var passengercontroller = require('../controllers/passengercontroller');
+var passengercontroller = require('../Controllers/passengerController')();
 var router = express.Router();
 //console.log(moment().format('YYYY-MM-DD'));
 router.get('/', function(req, res, next) {

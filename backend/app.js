@@ -5,22 +5,25 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var exphbs = require('express3-handlebars');
-passport= require('passport');
+     passport= require('passport');
 var mongo = require('mongoskin');
-db = mongo.db("mongodb://localhost:27017/uberlikedb");
+var dbUrl = "mongodb://localhost:27017/uberlikedb";
+db = mongo.db(dbUrl);
 var routes = require('./routes/index');
 // var users = require('./routes/users');
 var passengers = require('./routes/passengers');
 var drivers = require('./routes/drivers');
-var login = require('./services/login');
+var login = require('./Services/login');
 
 //mail = require("./routes/mail");
 //message = require('./routes/message');
 
-email = require("./services/email");
-sms = require("./services/sms");
+email = require("./Services/email");
+sms = require("./Services/sms");
 
 app = express();
+
+
 
 // view engine setup
 //app.set('views', path.join(__dirname, 'views'));
@@ -56,21 +59,17 @@ app.use(passport.session());
 });*/
 
 //console.log(Math.random().toString(36).substr(2,4));
-
-passport.serializeUser(function(user, done) {
-	  done(null, user);
-	});
-
-	passport.deserializeUser(function(user, done) {
-	    done(null, user);
-	});
 	
-
 app.use('/', routes);
 app.use('/',login);
 // app.use('/users', users);
 app.use('/drivers',drivers);
 app.use('/passengers',passengers);
+
+function renderApp(templName,templObj,callback){
+  app.render(templName,templObj,callback);
+}
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

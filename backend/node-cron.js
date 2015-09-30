@@ -4,8 +4,17 @@ var moment = require('moment');
 var async = require('async');
 var mongoSkin = require("mongoskin");
 var underscore = require("underscore");
+var uuid = require('node-uuid');
+var exphbs = require('express3-handlebars');
+var email = require('./services/email');
 var rule = new cron.RecurrenceRule();
 var app = express();
+app.engine('hbs', exphbs({
+  defaultLayout : 'main'
+}));
+app.set('view engine', 'hbs');
+app.set('views', __dirname + '/views');
+
 rule.second = 30;
 
 /*
@@ -13,24 +22,25 @@ cron.scheduleJob(rule, function(){
     console.log(new Date(), 'The 30th second of the minute.');
 });
 */
+var db = mongoSkin.db("mongodb://localhost:27017/uberlikedb");
 
 cron.scheduleJob('0,30 * * * *', function(){
     console.log('This runs at the every 30 minutes.');
     sendEmailForMatching();
 });
 
-  //  sendEmailForMatching();
+      sendEmailForMatching();
  //   console.log("2014-9-8T10:11:15+00".add(10,'minutes'  ).format());
 
 function sendEmailForMatching(){
-	var db = mongoSkin.db("mongodb://localhost:27017/uberlikedb");
 	var start_time = moment.utc().format("YYYY-MM-DDT00:00:00z");
 	var end_time = moment.utc().add(3,'hours').format();
 	var time_limit = moment(end_time,"YYYY-MM-DDTHH:mm:ssZ").add(30,'minutes').format();
-	db.collection("match_share").find({"start_time":{"$gte":start_time,"$lt":end_time}}).toArray(function(matchErr,matchResults){
+	//    "start_time":{"$gte":start_time,"$lt":end_time}
+	db.collection("match_share").find({}).toArray(function(matchErr,matchResults){
 		if(matchErr){
 			console.log("Error while getting share results");
-			console.log(matchErr);
+		  //	console.log(matchErr);
 		}else if((matchResults)&&(matchResults.length)){
 			async.eachSeries(matchResults,function(eachResult,callbackToMatch){
 				findMatches(eachResult,function(matchErr,result){
@@ -58,12 +68,13 @@ function findMatches(matchObj,callbackToEmailMatch){
  var distance = 4;
  	async.parallel({
  		startLocMatches:function(startLocCallback){
- 			 db.collection("match_share").find({"startLocation" : { $nearSphere : {$geometry: matchObj.startLocation, $maxDistance: (distance * 1000) }},"start_time":{"$gte":start_time,"$lt":end_time}},startLocCallback);
+ 			 db.collection("match_share").find({"startLocation" : { $nearSphere : {$geometry: matchObj.startLocation, $maxDistance: (distance * 1000) }},"start_time":{"$gte":start_time,"$lt":end_time}}).toArray(startLocCallback);
  		},
  		endLocMatches:function(endLocCallback){
- 			db.collection("match_share").find({"endLocation" : { $nearSphere : {$geometry: matchObj.endLocation, $maxDistance: (distance * 1000) }},"start_time":{"$gte":start_time,"$lt":end_time}},endLocCallback);
+ 			db.collection("match_share").find({"endLocation" : { $nearSphere : {$geometry: matchObj.endLocation, $maxDistance: (distance * 1000) }},"start_time":{"$gte":start_time,"$lt":end_time}}).toArray(endLocCallback);
  		}
  	},function(asyErr,matchedResults){
+ 		console.log(matchedResults);
  		if(asyErr){
  			callbackToEmailMatch(asyErr,null);
  		}else if((matchedResults)&&(matchedResults.startLocMatches)&&(matchedResults.endLocMatches)){
@@ -136,7 +147,7 @@ function sendEmailToBothUsers(matchObj,shareObj,mailCallback){
      emailValues.from = shareObj.start_address;//tripDetails.start_address;
      emailValues.to = shareObj.end_address; //tripDetails.end_address;
      emailValues.start_time = shareObj.start_time; // tripDetails.start_time;
-     emailDetails.shareuser = userResult.toLoc.username;
+     emailValues.shareuser = userResult.toLoc.username;
      	passengeremailValues.username =  userResult.toLoc.username;//userResult.fromLoc.username; // userResult.username;
      //	emilValues.email = data.email;
      passengeremailValues.from = matchObj.start_address;// shareObj.start_address;//tripDetails.start_address;
@@ -189,7 +200,7 @@ function sendEmailToBothUsers(matchObj,shareObj,mailCallback){
      		  					passengerDetails.email = userResult.toLoc.email;
      				var shareUser = userResult.fromLoc.username;
      		  				}else{
-     		  					userResult.fromLoc.email;
+     		  				  passengerDetails.email = userResult.fromLoc.email;
      				var shareUser = userResult.toLoc.username;
      		  				}
      		  				passengerDetails.html = html;
@@ -220,7 +231,7 @@ function sendEmailToBothUsers(matchObj,shareObj,mailCallback){
 
 function emailWithNoResult(matchObj,callback){
 	var start_time = moment().utc().add(3,'hours').format();
-	var end_time = moment(start_time,"YYYY-MM-DDTHH:mm:ssZ").utc.add(30,'minutes').format();
+	var end_time = moment(start_time,"YYYY-MM-DDTHH:mm:ssZ").utc().add(30,'minutes').format();
 	if((matchObj.start_time > start_time)&&(matchObj.start_time < end_time)){
 		db.collection("user").findOne({"_id":matchObj.user_id},function(userErr,userObj){
 		if(userErr){

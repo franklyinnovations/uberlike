@@ -20,9 +20,9 @@ console.log(id);
 
 //controller initialization
 
-var useroperations = require('../controllers/useroperations');
+var userController = require('../Controllers/userController')();
 
-var passengercontroller = require('../controllers/passengercontroller');
+var passengerController = require('../Controllers/passengerController')();
 
 
 console.log("utc time is:"+moment.utc());
@@ -63,41 +63,40 @@ router.get('/', function(req, res, next) {
 
 //testuser operations controller
 
-router.get('/controle',useroperations.controle);
+ router.get('/controle',userController.controle);
 
 
+router.post("/insertuser",userController.insertUsers); // insertuser
 
-router.post("/insertuser",useroperations.insertUsers); // insertuser
+router.post("/login/passenger",userController.login);	
 
-router.post("/login/passenger",useroperations.login);	
+router.post("/forgotpassword",userController.forgotPassword); // forgotpassword 
 
-router.post("/forgotpassword",useroperations.forgotPassword); // forgotpassword 
+router.get('/conf/user/:confirmid',userController.emailConfirmation);
 
-router.get('/conf/user/:confirmid',useroperations.emailConfirmation);
+router.post('conf/email',userController.emailConfirmation);   // emailconfirmation
 
-router.post('conf/email',useroperations.emailConfirmation);   // emailconfirmation
+router.get('/resetpwd/:tpassword',userController.resetPage);  // resetpage
 
-router.get('/resetpwd/:tpassword',useroperations.resetPage);  // resetpage
+router.post('/save/loginaudit',userController.loginAuditInsert);
 
-router.post('/save/loginaudit',useroperations.loginAuditInsert);
+ // router.post('/confirm/email/resend',userController.resendConfEmail);     // confirmemail
 
- // router.post('/confirm/email/resend',useroperations.resendConfEmail);     // confirmemail
+//router.post('/confirm/mobile/resend',userController.resendMobileConfCode); // mesgsend
 
-//router.post('/confirm/mobile/resend',useroperations.resendMobileConfCode); // mesgsend
+router.post('/update/mobilenumber',userController.updateMobileNumber); // updatemobilenum
 
-router.post('/update/mobilenumber',useroperations.updateMobileNumber); // updatemobilenum
+router.post('/update/driverdetails',userController.updateDriverDetails); // driverdetails
 
-router.post('/update/driverdetails',useroperations.updateDriverDetails); // driverdetails
+router.post('/verify/mobile',userController.verifyMobileNumber);  // verifymobile
 
-router.post('/verify/mobile',useroperations.verifyMobileNumber);  // verifymobile
+router.post('/reset/password',userController.resetPasswd); // resetpasswd
 
-router.post('/reset/password',useroperations.resetPasswd); // resetpasswd
+router.get('/readcsv',userController.saveCsvFileData);
 
-router.get('/readcsv',useroperations.saveCsvFileData);
+router.get('/storecsvdata',userController.saveLocationData);
 
-router.get('/storecsvdata',useroperations.saveLocationData);
-
-router.get('/:city_location/share-taxi/:trip_address/:match_id',passengercontroller.contactPage);
+router.get('/:city_location/share-taxi/:trip_address/:match_id',passengerController.contactPage);
 
 
 /* twillow messaging test */
