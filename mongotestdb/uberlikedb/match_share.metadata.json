@@ -1,0 +1,1 @@
+{"options":{},"indexes":[{"v":1,"key":{"_id":1},"name":"_id_","ns":"uberlikedb.match_share"},{"v":1,"key":{"startLocation":"2dsphere"},"name":"startLocation_2dsphere","ns":"uberlikedb.match_share","2dsphereIndexVersion":2},{"v":1,"key":{"endLocation":"2dsphere"},"name":"endLocation_2dsphere","ns":"uberlikedb.match_share","2dsphereIndexVersion":2}]}
