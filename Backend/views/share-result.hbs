@@ -9,18 +9,27 @@
 <span id="user_id">{{user_id}}</span>
 <span id="trip_id">{{trip_id}}</span>
 </div>
+
+</div>
+<br/>
+<div class="container">
 <div class="row">
-<div class="col-sm-4">
+<div class="col-sm-3">
+{{shareUser.username}}
+</div>
+<div class="col-sm-3">
 <img src = {{imageUrl}} />
 </div>
-<div class="col-sm-4">
+<div class="col-sm-3">
+ <b> From : </b> {{tripInfo.start_address}}
+</div>
+<div class="col-sm-3">
+<spam><b> To : </b>  {{tripInfo.end_address}}
+</div>
+<div class="col-sm-3">
+<button type="button" id ="contactbtn"> Contact </button>
+</div>
 
-</div>
-<div class="col-sm-4">
-<spam><b> To :  </b>
-</div>
-
-</div>
 </div>
 </div>
 <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
@@ -112,6 +121,26 @@ $.ajax({
       alert(results.msg);
   }
  // console.log(results);
+  });
+
+  $("#contactbtn").click(function(ev){
+  var passedData = {};
+  passedData.user_id = $("#user_id").text();
+  passedData.trip_id = $("#trip_id").text();
+
+  $.ajax({
+  method:"POST",
+  url:"/passengers/confirmation/sharetrip",
+  data:passedData
+  })
+  .done(function(results){
+  if(results.status == "success"){
+  alert("success fully sended message to user");
+  $(location).attr('href','/');
+  }else{
+  alert(results.msg);
+  }
+  });
   });
 });
 </script>

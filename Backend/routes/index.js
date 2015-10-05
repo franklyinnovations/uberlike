@@ -1,57 +1,19 @@
 var express = require('express');
 var uuid = require('node-uuid');
-var md5 = require('md5');
-//var FacebookStrategy = require('passport-facebook').Strategy;
-//var GoogleStrategy = require( 'passport-google-oauth2' ).Strategy;
-//var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;//OAuthStrategy;
-var twilio = require('twilio');
+
 
 var router = express.Router();
 //var db = mongo.db("mongodb://localhost:27017/uberlikedb"); // logintest
 var moment = require('moment');
 
-var Hashids = require("hashids");
-   var hashids = new Hashids("this is my salt", 0, "0123456789abcdef");
- 
-var id = hashids.encode(1234567);
-console.log(hashids.encode());
-console.log(hashids.encode());
-console.log(id);
 
 //controller initialization
 
-var userController = require('../Controllers/userController')();
+var userController = require('../controllers/userController')();
 
-var passengerController = require('../Controllers/passengerController')();
+var passengerController = require('../controllers/passengerController')();
 
 
-console.log("utc time is:"+moment.utc());
-console.log("utc formate date and time after 4 hours is:"+moment.utc().add(4, 'hours').format('YYYY-MM-DD HH:mm:ss'));
-if(moment.utc().format('YYYY-MM-DD HH:mm:ss')<=moment.utc().add(4, 'hours').format('YYYY-MM-DD HH:mm:ss')){
-	console.log("i am from true");
-}else{
-	console.log("i am from false");
-}
-// moment.utc();
-/*
-  Details of global required parameters 
- */
-//
-
-/*
-var FACEBOOK_APP_ID = "1033910573287452";
-var FACEBOOK_APP_SECRET = "62c751aa570cae0e94e092c8b4e8449f";
-
-var GOOGLE_CLIENT_ID = "900607789971-n6h2130p69shrh3sjmn6cmq5e960hldf.apps.googleusercontent.com";
-var GOOGLE_CLIENT_SECRET = "Y0Z0jk99lgfiEpljUga7stPr";
-*/
-
-var accountSid = "ACf678f8a1909b0f5c04df81e42e4af2fc";   //"AC3135929726be140536b50485c60057e7";
-var authToken = "837d2b93452b137288ee26bfb82c75d1" ;    //"2ba7d45082ef1ddf1d90993d4e7463a2";
-
-var host = "http://localhost:3000";
-
-var client = new twilio.RestClient(accountSid, authToken);
 /* GET home page. */
 router.get('/test/cookie',function(req,res,next){
 	console.log(req.cookies.user);
@@ -92,9 +54,9 @@ router.post('/verify/mobile',userController.verifyMobileNumber);  // verifymobil
 
 router.post('/reset/password',userController.resetPasswd); // resetpasswd
 
-router.get('/readcsv',userController.saveCsvFileData);
+ // router.get('/readcsv',userController.saveCsvFileData);
 
-router.get('/storecsvdata',userController.saveLocationData);
+ // router.get('/storecsvdata',userController.saveLocationData);
 
 router.get('/:city_location/share-taxi/:trip_address/:match_id',passengerController.contactPage);
 
@@ -102,6 +64,14 @@ router.get('/:city_location/share-taxi/:trip_address/:match_id',passengerControl
 /* twillow messaging test */
 router.get("/send/test/message",function(req,res){
 //+17409364714
+var twilio = require('twilio');
+var accountSid = "ACf678f8a1909b0f5c04df81e42e4af2fc";   //"AC3135929726be140536b50485c60057e7";
+var authToken = "837d2b93452b137288ee26bfb82c75d1" ;    //"2ba7d45082ef1ddf1d90993d4e7463a2";
+
+var host = "http://localhost:3000";
+
+var client = new twilio.RestClient(accountSid, authToken);
+
 client.messages.create({
     to:'+919542750395',
     from:'+17409364714',
@@ -115,5 +85,4 @@ client.messages.create({
     }
 });
 });
-
 module.exports = router;

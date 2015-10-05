@@ -4,9 +4,10 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-var exphbs = require('express3-handlebars');
-     passport= require('passport');
+var exphbs = require('express-handlebars');
+//     passport= require('passport');
 var mongo = require('mongoskin');
+var cron = require('node-schedule');
 if(process.env.ENV == 'Test'){
 var dbUrl = "mongodb://localhost:27017/uberlikedb_test";  
 }else{
@@ -34,13 +35,15 @@ var routes = require('./routes/index');
 // var users = require('./routes/users');
 var passengers = require('./routes/passengers');
 var drivers = require('./routes/drivers');
-var login = require('./Services/login');
+var login = require('./services/login');
+
+var cronjob = require('./services/cronJob')();
 
 //mail = require("./routes/mail");
 //message = require('./routes/message');
 
-email = require("./Services/email");
-sms = require("./Services/sms");
+email = require("./services/email");
+sms = require("./services/sms");
 
 app = express();
 
@@ -71,8 +74,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(allowCrossDomain);
-app.use(passport.initialize());
-app.use(passport.session());
+// app.use(passport.initialize());
+// app.use(passport.session());
 
 //app.engine('hbs',exphbs({defaultLayout: 'main'}));
 /*var hbs = exphbs.create({
@@ -80,6 +83,11 @@ app.use(passport.session());
 });*/
 
 //console.log(Math.random().toString(36).substr(2,4));
+
+cron.scheduleJob('0,30 * * * *', function(){
+    console.log('This runs at the every 30 minutes.');
+    cronjob.sendEmailForMatching();
+});
 	
 app.use('/', routes);
 app.use('/',login);
