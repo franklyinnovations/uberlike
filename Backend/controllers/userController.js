@@ -1,4 +1,5 @@
 var userController = function(){
+	/*
 	var mongo = require('mongoskin');
 if(process.env.ENV == 'Test'){
 var dbUrl = "mongodb://localhost:27017/uberlikedb_test";  
@@ -7,6 +8,7 @@ var dbUrl = "mongodb://localhost:27017/uberlikedb";
 }
 
 var db = mongo.db(dbUrl);
+*/
 
 var uuid = require('node-uuid');
 var twilio = require('twilio');
@@ -156,6 +158,11 @@ res.send({"status":"error","msg":"error while getting the user data"});
 	res.status(409);
 res.send({"status":"error","msg":"user email or phone number already exists"});
 }else{
+	userData.image_url = userData._id+'.jpg';
+	download("https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Crystal_Clear_kdm_user_male.png/50px-Crystal_Clear_kdm_user_male.png",userData.image_url,function(){
+		console.log('image downloaded successfully');
+	});
+	userData.gender = userData.gender || 'male';
 	userData.signupdate = moment.utc().format(); // 'YYYY-MM-DDTHH:mm:ss'
  userModel.insert(userData,function(err,result1){
      if(err){
@@ -541,7 +548,8 @@ function updateMobileNumber(req,res,next){
 				res.status(500);
 				res.send({"status":"error","msg":"Error while checking"});
 			}else{
-				if(result){
+				console.log(result._id);
+				if((result)&&(userData._id != result._id)){
 					res.status(409);
 					res.send({"status":"error","msg":"These phonenumber is already exists.Please choose another one."});
 				}else{
@@ -642,7 +650,7 @@ function updateDriverDetails(req,res,next){
 				res.status(500);
 				res.send({"status":"error","msg":"Error while checking"});
 			}else{
-				if(result){
+				if((result)&&(driverDetails._id != result._id)){
 					res.status(409);
 					res.send({"status":"error","msg":"These phonenumber is already exists.Please choose another one."});
 				}else{
@@ -667,7 +675,7 @@ function updateDriverDetails(req,res,next){
 					});
 				}
 			}
-		})
+		});
 }else{
 			res.status(409);
 			res.send({"status":"error","msg":"user already confirmed his mobile number."});

@@ -1,9 +1,9 @@
 var nodemailer = require('nodemailer');
 var smtpTransport = require('nodemailer-smtp-transport');
 
-module.exports = function sendEmail(options,callback) {
 
-    var transporter = nodemailer.createTransport(smtpTransport({
+
+var transporter = nodemailer.createTransport(smtpTransport({
           transport: "SMTP",
     host: "smtp.gmail.com",
     secureConnection: false,
@@ -15,6 +15,10 @@ module.exports = function sendEmail(options,callback) {
             pass: '92901529'
         }
     }));
+
+
+
+module.exports = function sendEmail(options,callback) {
 
     var mailOptions = {
         from: options.from || "titaniumstudeio0@gmail.com", // sender address 

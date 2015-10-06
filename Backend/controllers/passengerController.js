@@ -785,16 +785,17 @@ if(matchErr){
 			var distance = 1;
 		var start_time = moment(matchData.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().subtract('10','minutes').format();
 		var end_time = moment(matchData.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().add('10','minutes').format();
+		var user_id = matchData.user_id;
 		var resultTrips = [];
 
 		// "start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}
 
 		async.parallel({
 			start:function(startCallback){
-				matchShareModel.getRestrictFields({"startLocation" : { $nearSphere : {$geometry: matchData.startLocation, $maxDistance: (distance * 1000) }}},{"trip_details":false,"Routes":false},startCallback);
+				matchShareModel.getRestrictFields({"startLocation" : { $nearSphere : {$geometry: matchData.startLocation, $maxDistance: (distance * 1000) }},"start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}},{"trip_details":false,"Routes":false},startCallback);
 			},
 			end:function(endCallback){
-				matchShareModel.getRestrictFields({"endLocation": { $nearSphere : {$geometry: matchData.endLocation, $maxDistance: (distance * 1000) }}},{"trip_details":false,"Routes":false},endCallback);
+				matchShareModel.getRestrictFields({"endLocation": { $nearSphere : {$geometry: matchData.endLocation, $maxDistance: (distance * 1000) }},"start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}},{"trip_details":false,"Routes":false},endCallback);
 			}
 		},function(errTrip,matchResult){
 			console.log(matchResult);

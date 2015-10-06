@@ -1,6 +1,7 @@
 var trip = function(){
 
 		
+		/*
 		var mongo = require('mongoskin');
 if(process.env.ENV == 'Test'){
 var dbUrl = "mongodb://localhost:27017/uberlikedb_test";  
@@ -8,7 +9,7 @@ var dbUrl = "mongodb://localhost:27017/uberlikedb_test";
 var dbUrl = "mongodb://localhost:27017/uberlikedb";
 }
 var db = mongo.db(dbUrl);
-
+*/
 
 	function get(tripObj,callback){
 		db.collection("trips").find(tripObj).toArray(callback);

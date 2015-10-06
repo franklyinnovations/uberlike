@@ -12,7 +12,7 @@ var cronjobs = function(){
 	var start_time = moment.utc().format("YYYY-MM-DDT00:00:00z");
 	var end_time = moment.utc().add(3,'hours').format();
 	var time_limit = moment(end_time,"YYYY-MM-DDTHH:mm:ssZ").add(30,'minutes').format();
-	//    "start_time":{"$gte":start_time,"$lt":end_time}
+	//    "start_time":{"$gte":start_time,"$lt":end_time}  
 	  matchShareModel.get({"start_time":{"$gte":start_time,"$lt":end_time}},function(matchErr,matchResults){
 		if(matchErr){
 			console.log("Error while getting share results");

@@ -6,8 +6,12 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var exphbs = require('express-handlebars');
 //     passport= require('passport');
-var mongo = require('mongoskin');
+ // var mongo = require('mongoskin');
 var cron = require('node-schedule');
+
+db = require('./config');
+
+/*
 if(process.env.ENV == 'Test'){
 var dbUrl = "mongodb://localhost:27017/uberlikedb_test";  
 }else{
@@ -16,6 +20,7 @@ var dbUrl = "mongodb://localhost:27017/uberlikedb_test";
  // var dbUrl = "mongodb://localhost:27017/uberlikedb_test";  
 
 db = mongo.db(dbUrl);
+*/
 
   // var bcrypt = require('bcrypt-node');
  // var hash = bcrypt.hashSync('92901529');
@@ -88,7 +93,7 @@ cron.scheduleJob('0,30 * * * *', function(){
     console.log('This runs at the every 30 minutes.');
     cronjob.sendEmailForMatching();
 });
-	
+ //	cronjob.sendEmailForMatching();
 app.use('/', routes);
 app.use('/',login);
 // app.use('/users', users);
