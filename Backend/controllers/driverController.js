@@ -3,15 +3,17 @@ var uuid = require('node-uuid');
 var moment = require('moment');
 var validator = require('validator');
 
-var taxiLocationModel = require('../models/taxiLocation')();
+//var taxiLocationModel = require('../models/taxiLocation')();
+
+var TaxiLocation = require('../models/taxiLocationModel');
 
 	 function saveTaxiLocation(req,res,next){
-	 	var taxiLocationObj = req.body;
+	 	var taxiLocationObj = new TaxiLocation(req.body);
 	 	if((taxiLocationObj)&&(taxiLocationObj.driver_id)&&(taxiLocationObj.location)){
 	 		taxiLocationObj._id = uuid.v4();
 	 		taxiLocationObj.date_time = moment.utc().format(); // YYYY-MM-DDTHH:mm:ssZ
 	 		taxiLocationObj.isOccupied = (taxiLocationObj.isOccupied)?taxiLocationObj.isOccupied:false;
-	 		taxiLocationModel.insert(taxiLocationObj,function(err,result){
+	 		taxiLocationObj.save(function(err,result){
 	 			if(err){
 	 				res.status(500);
 	 				res.send({"status":"error","msg":"Error While inserting taxi location"});

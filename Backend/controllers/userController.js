@@ -19,8 +19,11 @@ var request = require('request');
 var bcrypt = require('bcrypt-node');
 
 
-var userModel = require('../models/user')();
-var loginAuditModel = require('../models/loginAudit')();
+// var userModel = require('../models/user')();
+// var loginAuditModel = require('../models/loginAudit')();
+
+var User = require('../models/userModel');
+var LoginAudit = require('../models/loginAuditModel');
 
 var host = "http://localhost:3000";
 
@@ -53,11 +56,11 @@ var oauthLoginHandler =function (data,res){
 console.log(data);
 // user.email = data.emails[0].value;
 
-var user = {};
+var user = new User();
 user.email = data.emails[0].value;
 
 
-userModel.getOne(user,function(err,result){
+User.findOne({email:user.email},function(err,result){
 if(err){
 	res.status(500);
 	res.send({"status":"error","msg":"error while getting the user data"});
@@ -106,7 +109,7 @@ user.gender = data.gender;
 	user.enable = false;
 	user.signupdate = moment.utc().format(); //'YYYY-MM-DDTHH:mm:ss'
 	var confirmid= user.confid;
-	userModel.insert(user,function(err1,result1){
+	user.save(function(err1,result1){
 		if(err1){
 			res.status(500);
 			res.send({"status":"error","msg":"error while inserting the user data"});
@@ -124,7 +127,7 @@ user.gender = data.gender;
 
 var insertUsers = function(req,res,next){
 
-var userData = req.body;
+var userData = new User(req.body);
 console.log(userData);
 if(userData.email && userData.password && userData.phonenumber){
 	//    ^(0|\+91)?[789]\d{9}$
@@ -150,7 +153,7 @@ userData.confirm = false;
 userData.mconfid = Math.random().toString(36).substr(2,4);
 userData.mconfirm = false;
 userData.enable = false;
-userModel.getOne({$or:[{"email":userData.email},{"phonenumber":userData.phonenumber}]},function(err,result){
+User.findOne({$or:[{"email":userData.email},{"phonenumber":userData.phonenumber}]},function(err,result){
 if(err){
 	res.status(500);
 res.send({"status":"error","msg":"error while getting the user data"});
@@ -164,7 +167,7 @@ res.send({"status":"error","msg":"user email or phone number already exists"});
 	});
 	userData.gender = userData.gender || 'male';
 	userData.signupdate = moment.utc().format(); // 'YYYY-MM-DDTHH:mm:ss'
- userModel.insert(userData,function(err,result1){
+    userData.save(function(err,result1){
      if(err){
      	res.status(500);
      	res.send({"status":"error","err":err,"msg":"failed to insert user information"});
@@ -266,7 +269,7 @@ if(userinfo.email && userinfo.password){
  //	userinfo.password = bcrypt.hashSync(userinfo.password);
 	//"provider":{"$ne":["F","G"]
 	// ,"password":userinfo.password
-	userModel.getOne({"email":userinfo.email},function(err,result){
+	User.findOne({"email":userinfo.email},function(err,result){
 	 //	console.log(userinfo.password);
 	 //	console.log(result.password);
 		console.log(bcrypt.compareSync(userinfo.password,result.password));
@@ -317,7 +320,7 @@ var userInfo = req.body;
 console.log(userInfo);
 if(userInfo.email){
 	if(validator.isEmail(userInfo.email)){
-	userModel.getOne({"email":userInfo.email},function(err,result){
+	User.findOne({"email":userInfo.email},function(err,result){
 		if(err){
 			res.status(500);
 			res.send({"status":"error","msg":"error while getting the user information"});
@@ -349,7 +352,7 @@ if(userInfo.email){
      		 		res.status(500);
      		 		res.send({"status":"error","msg":"mail sending to user is failed"});
      		 	}else{
-  	userModel.update({"_id":result._id},temppasswordset,function(err1,result1){
+  	        User.update({"_id":result._id},temppasswordset,function(err1,result1){
   		if(err1){
   			res.status(500);
   			res.send({"status":"error","msg":"Error while setting the user password resetting"});
@@ -382,7 +385,7 @@ if(userInfo.email){
 function emailConfirmation(req,res,next){
 var confid = req.params.confirmid || req.body.confirmId;
 if(confid){
- userModel.getOne({"confid":confid},function(err,result){
+	 User.findOne({"confid":confid},function(err,result){
 if(err){
 	res.status(500);
 res.send({"status":"error","msg":"error while confirm user data"});
@@ -394,7 +397,7 @@ res.send({"status":"error","msg":"error while confirm user data"});
 		if(result.mconfirm){
 			result.enable = true;
 		}
-   userModel.update({"_id":result._id},{"confirm":true,"enable":result.enable},function(err1,result1){
+   User.update({"_id":result._id},{"confirm":true,"enable":result.enable},function(err1,result1){
 	if(err1){
 		res.status(500);
 		res.send({"status":"error","msg":"error while updating user confirmation"});
@@ -421,7 +424,7 @@ function resetPage(req,res,next){
 var tlink = req.params.tpassword;
 if(tlink){
 var settime = moment.utc().format(); // 'YYYY-MM-DDTHH:mm:ss'
-   userModel.getOne({"tpassword":tlink},function(err,result){
+   User.findOne({"tpassword":tlink},function(err,result){
 	console.log(result);
 if(err){
 	res.status(500);
@@ -451,12 +454,12 @@ if(!(validator.isNull(resetData.password))){
 			//isLength(str, min
 			if(validator.isLength(resetData.password,8)){
 
- userModel.getOne({"_id":resetData._id},function(err,result){
+ User.findOne({"_id":resetData._id},function(err,result){
 	if(err){
 		res.status(500);
 		res.send({"status":"error","msg":"Error while getting user information."});
 	}else if(result){
-		userModel.update({"_id":result._id},{"password":bcrypt.hashSync(resetData.password),"preset":true},function(err1,result1){
+	   User.update({"_id":result._id},{"password":bcrypt.hashSync(resetData.password),"preset":true},function(err1,result1){
 			if(err1){
 				res.status(500);
 				res.send({"status":"error","msg":"Error while setting the user password."});
@@ -492,7 +495,7 @@ function verifyMobileNumber(req,res,next){
 	console.log(userData);
 	if((userData._id)&&!(validator.isNull(userData.mconfid))){
 
-	 userModel.getOne({"_id":userData._id},function(err,result){
+	 User.findOne({"_id":userData._id},function(err,result){
 		if(err){
 			res.status(500);
 			res.send({"status":"error","msg":"error while getting userinfo"});
@@ -502,7 +505,7 @@ function verifyMobileNumber(req,res,next){
 					if(result.confirm){
 						result.enable = true;
 					}
-				   userModel.update({"_id":result._id},{"mconfirm":true,"enable":result.enable},function(err1,result1){
+				     User.update({"_id":result._id},{"mconfirm":true,"enable":result.enable},function(err1,result1){
 					if(err1){
 						res.status(500);
 						res.send({"status":"error","msg":"failed to confirm password."});
@@ -543,7 +546,7 @@ function updateMobileNumber(req,res,next){
 		if(phoneReg.test(userData.phonenumber)){
 		var usertype = userData.usertype || "P";
 		userData.mconfid = Math.random().toString(36).substr(2,4);
-		userModel.getOne({"phonenumber":userData.phonenumber},function(err,result){
+	     User.findOne({"phonenumber":userData.phonenumber},function(err,result){
 			if(err){
 				res.status(500);
 				res.send({"status":"error","msg":"Error while checking"});
@@ -553,7 +556,7 @@ function updateMobileNumber(req,res,next){
 					res.status(409);
 					res.send({"status":"error","msg":"These phonenumber is already exists.Please choose another one."});
 				}else{
-					 userModel.update({"_id":userData._id},{"phonenumber":userData.phonenumber,"mconfirm":false,"mconfid":userData.mconfid,"usertype":usertype},function(err1,result1){
+					 User.update({"_id":userData._id},{"phonenumber":userData.phonenumber,"mconfirm":false,"mconfid":userData.mconfid,"usertype":usertype},function(err1,result1){
 						if(err1){
 							res.status(500);
 							res.send({"status":"error","msg":"Error while updating phonenumber"});
@@ -590,7 +593,7 @@ function updateMobileNumber(req,res,next){
 function resendMobileConfCode(req,res,next){
 	var userData = req.body;
 	if(userData._id){
-  userModel.getOne({"_id":userData._id},function(err,result1){
+   User.findOne({"_id":userData._id},function(err,result1){
 	if(err){
 		res.status(500);
 		res.send({"status":"error","msg":"error while getting userinfo"});
@@ -599,7 +602,7 @@ function resendMobileConfCode(req,res,next){
 			var newobj={};
 newobj.mconfid = Math.random().toString(36).substr(2,4);
 newobj.mconfirm = false;
-      userModel.update({"_id":result._id},newobj,function(err1,result2){
+         User.update({"_id":result._id},newobj,function(err1,result2){
 					if(err1){
 						res.status(500);
 						res.send({"status":"error","msg":"failed to set new code"});
@@ -645,7 +648,7 @@ function updateDriverDetails(req,res,next){
 		var phoneReg = new RegExp("^[7-9][0-9]{9}$"); 
 		if(phoneReg.test(driverDetails.phonenumber)){
 		driverDetails.mconfid = Math.random().toString(36).substr(2,4);
-       userModel.getOne({"phonenumber":driverDetails.phonenumber},function(err,result){
+       User.findOne({"phonenumber":driverDetails.phonenumber},function(err,result){
 			if(err){
 				res.status(500);
 				res.send({"status":"error","msg":"Error while checking"});
@@ -654,7 +657,7 @@ function updateDriverDetails(req,res,next){
 					res.status(409);
 					res.send({"status":"error","msg":"These phonenumber is already exists.Please choose another one."});
 				}else{
-				 userModel.update({"_id":driverDetails._id},{"phonenumber":driverDetails.phonenumber,"mconfirm":false,"mconfid":driverDetails.mconfid,"licenceId":driverDetails.licenceId,"vnumber":driverDetails.vnumber,"ctype":driverDetails.ctype,"usertype":usertype},function(err1,result1){
+				 User.update({"_id":driverDetails._id},{"phonenumber":driverDetails.phonenumber,"mconfirm":false,"mconfid":driverDetails.mconfid,"licenceId":driverDetails.licenceId,"vnumber":driverDetails.vnumber,"ctype":driverDetails.ctype,"usertype":usertype},function(err1,result1){
 						if(err1){
 							res.status(500);
 							res.send({"status":"error","msg":"Error while updating phonenumber"});
@@ -691,7 +694,7 @@ function updateDriverDetails(req,res,next){
 function resendConfEmail(req,res,next){
 var body = req.body;
 if(body._id){
-userModel.getOne({"_id":body._id},function(err,result1){
+ User.findOne({"_id":body._id},function(err,result1){
 	if(err){
 		res.status(500);
 		res.send({"status":"error","msg":"error while getting userinfo"});
@@ -745,12 +748,12 @@ userModel.getOne({"_id":body._id},function(err,result1){
 // Save Login Audit
 
 function loginAuditInsert(req,res,next){
-var loginAuditInfo = req.body;
+var loginAuditInfo = new LoginAudit(req.body);
 console.log(loginAuditInfo);
 if((loginAuditInfo.user_id)&&(loginAuditInfo.location)){
 	loginAuditInfo._id = uuid.v4();
 loginAuditInfo.datetime = moment.utc().format();// 'YYYY-MM-DDTHH:mm:ss'
- loginAuditModel.insert(loginAuditInfo,function(err,result){
+  loginAuditInfo.save(function(err,result){
 if(err){
 	res.status(500);
 res.send({"status":"error","msg":"Login info storing failed."});

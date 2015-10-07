@@ -20,7 +20,7 @@
 	var host = "http://localhost";
 
 
-var User = require("../models/user")();
+ // var User = require("../models/user")();
 
 
 router.use(passport.initialize());

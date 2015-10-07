@@ -1,8 +1,13 @@
 var cronjobs = function(){
 
-	var matchShareModel = require("../models/matchShare")();
-	var userModel = require("../models/user")();
-	var emailUserModel = require("../models/emailUser")();
+	var User = require('../models/userModel');
+	var MatchShare = require('../models/matchShareModel');
+	var EmailUser = require('../models/emailUserModel');
+
+ //	var matchShareModel = require("../models/matchShare")();
+ //	var userModel = require("../models/user")();
+ //	var emailUserModel = require("../models/emailUser")();
+
 	var moment = require('moment');
 	var async = require('async');
 	var underscore = require("underscore");
@@ -13,7 +18,7 @@ var cronjobs = function(){
 	var end_time = moment.utc().add(3,'hours').format();
 	var time_limit = moment(end_time,"YYYY-MM-DDTHH:mm:ssZ").add(30,'minutes').format();
 	//    "start_time":{"$gte":start_time,"$lt":end_time}  
-	  matchShareModel.get({"start_time":{"$gte":start_time,"$lt":end_time}},function(matchErr,matchResults){
+	   MatchShare.find({"start_time":{"$gte":start_time,"$lt":end_time}},function(matchErr,matchResults){
 		if(matchErr){
 			console.log("Error while getting share results");
 		  //	console.log(matchErr);
@@ -44,10 +49,10 @@ function findMatches(matchObj,callbackToEmailMatch){
  var distance = 4;
  	async.parallel({
  		startLocMatches:function(startLocCallback){
-        	matchShareModel.get({"startLocation" : { $nearSphere : {$geometry: matchObj.startLocation, $maxDistance: (distance * 1000) }},"start_time":{"$gte":start_time,"$lt":end_time}},startLocCallback);
+           MatchShare.find({"startLocation" : { $nearSphere : {$geometry: matchObj.startLocation, $maxDistance: (distance * 1000) }},"start_time":{"$gte":start_time,"$lt":end_time}},startLocCallback);
  		},
  		endLocMatches:function(endLocCallback){
- 		   matchShareModel.get({"endLocation" : { $nearSphere : {$geometry: matchObj.endLocation, $maxDistance: (distance * 1000) }},"start_time":{"$gte":start_time,"$lt":end_time}},endLocCallback);
+ 		   MatchShare.find({"endLocation" : { $nearSphere : {$geometry: matchObj.endLocation, $maxDistance: (distance * 1000) }},"start_time":{"$gte":start_time,"$lt":end_time}},endLocCallback);
  		}
  	},function(asyErr,matchedResults){
  		console.log(matchedResults);
@@ -62,7 +67,7 @@ function findMatches(matchObj,callbackToEmailMatch){
  					var shareObj = underscore.find(matchedResults.startLocMatches,function(obj) { return obj._id == eachMatchId});
  					if(((matchObj.car == 1)&&(shareObj.car == 0))||((matchObj.car == 0)&&(shareObj.car == 1))){
 
- 					emailUserModel.getOne({"$or":[{"share_id":shareObj._id},{"share_id":matchObj._id}],"$or":[{"match_id":matchObj._id},{"match_id":eachMatchId}]},function(mailSendErr,mailSendResult){
+ 					 EmailUser.findOne({"$or":[{"share_id":shareObj._id},{"share_id":matchObj._id}],"$or":[{"match_id":matchObj._id},{"match_id":eachMatchId}]},function(mailSendErr,mailSendResult){
  						if(mailSendErr){
  							matchCallback(mailSendErr);
  						}else if(mailSendResult){
@@ -101,10 +106,10 @@ function findMatches(matchObj,callbackToEmailMatch){
 function sendEmailToBothUsers(matchObj,shareObj,mailCallback){
 	async.parallel({
 		fromLoc:function(userSenderCallback){
-			 userModel.getOne({"_id":matchObj.user_id},userSenderCallback);
+			  User.findOne({"_id":matchObj.user_id},userSenderCallback);
 		},
 		toLoc:function(recUserCallback){
-			 userModel.getOne({"_id":shareObj.user_id},recUserCallback);
+			 User.findOne({"_id":shareObj.user_id},recUserCallback);
 		}
 	},function(userErr,userResult){
 			if(userErr){
@@ -184,7 +189,8 @@ function sendEmailToBothUsers(matchObj,shareObj,mailCallback){
      		  						emailObj._id = uuid.v4();
      		  						emailObj.match_id = matchObj._id;
      		  						emailObj.share_id = shareObj._id;
-     		  						emailUserModel.insert(emailObj,mailCallback);
+     		  						var emailResultObj = new EmailUser(emailObj);
+     		  						emailResultObj.save(mailCallback);
      		  					}
      		  				});
      		  			}
@@ -204,7 +210,7 @@ function emailWithNoResult(matchObj,callback){
 	var start_time = moment().utc().add(3,'hours').format();
 	var end_time = moment(start_time,"YYYY-MM-DDTHH:mm:ssZ").utc().add(30,'minutes').format();
 	if((matchObj.start_time > start_time)&&(matchObj.start_time < end_time)){
-		 userModel.getOne({"_id":matchObj.user_id},function(userErr,userObj){
+		 User.findOne({"_id":matchObj.user_id},function(userErr,userObj){
 		if(userErr){
 			callback(userErr,null);
 		}else if(userObj){

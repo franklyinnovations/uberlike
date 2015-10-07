@@ -7,12 +7,18 @@ var underscore = require('underscore');
 var validator = require('validator');
 var request = require('request');
 
+ // var MatchShare;
 
+  // var matchShareModel = require('../models/matchShare')();
+  // var taxiLocationModel = require('../models/taxiLocation')();
+  // var tripModel = require('../models/trip')();
+  // var userModel = require('../models/user')();
 
-var matchShareModel = require('../models/matchShare')();
-var taxiLocationModel = require('../models/taxiLocation')();
-var tripModel = require('../models/trip')();
-var userModel = require('../models/user')();
+var MatchShare = require('../models/matchShareModel');
+var TaxiLocation = require('../models/taxiLocationModel');
+var Trip = require('../models/tripModel');
+var User = require('../models/userModel');
+var Matche = require('../models/matchesModel');
 
 var geocoderProvider = 'google';
 var httpAdapter = 'https';
@@ -28,8 +34,10 @@ var polyline = require('polyline');
  //console.log(moment("2015-04-13T06:06:08+00:00","YYYY-MM-DDTHH:mm:ssZ").utc().format());
 
 var host = "http://localhost";
+
+console.log(moment(moment(moment("7 October, 2015","DD MMMM, YYYY").format("YYYY-MM-DD")+"T"+moment("6:38 PM","hh:mm a").format("HH:mm:ssZ")).utc().format()).toISOString());
 	
-		  console.log( moment(moment("2015-09-28","YYYY-MM-DD").format("YYYY-MM-DD")+"T"+moment("6:15 pm","hh:mm a").format("HH:mm:ss")).format() );
+		 //  console.log( moment(moment("2015-09-28","YYYY-MM-DD").format("YYYY-MM-DD")+"T"+moment("6:15 pm","hh:mm a").format("HH:mm:ss")).format() );
 
 
 	  // db.locations.find({ location : { $nearSphere : [ 78.486671,17.385044 ], $maxDistance: (9/6371) } }).pretty();
@@ -42,7 +50,7 @@ var host = "http://localhost";
 		 //  var taxiResults = [];
 			var moreTime = moment.utc().subtract('5','minutes').format(); // YYYY-MM-DDTHH:mm:ssZ
 
-			taxiLocationModel.get({"location" : { $nearSphere : {$geometry: {type : "Point",coordinates : fromLocation.coordinates}, $maxDistance: (distance * 1000) }},"isOccupied":false},function(err2,taxiResult){
+			 TaxiLocation.find({"location" : { $nearSphere : {$geometry: {type : "Point",coordinates : fromLocation.coordinates}, $maxDistance: (distance * 1000) }},"isOccupied":false},function(err2,taxiResult){
 							if(err2){
 								console.log(err2);
 								res.status(500);
@@ -68,16 +76,9 @@ var host = "http://localhost";
 
 	 function poliLineDecode(req,res,next){
 		var data = req.body;
-		db.collection("steps").findOne({},function(err,stepResult){
-			if(err){
-				res.status(500);
-				res.send({"status":"error","msg":"error while getting steps"});
-			}else{
-				var decodedData = polyline.decode("s}gwF~eibMOAwEUuCMFoCTwK@W@m@");   // stepResult.encripted_line
+		var decodedData = polyline.decode("s}gwF~eibMOAwEUuCMFoCTwK@W@m@");   // stepResult.encripted_line
 				res.status(200);
 				res.send({"status":"success","decodedObj":decodedData});
-			}
-		});
 	 }
 
 	 function saveSearchData(req,res,next){
@@ -94,7 +95,7 @@ var host = "http://localhost";
 			tripObj.start_time = moment(tripData.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().format();  // "2015-04-13T06:06:08+00:00"
 		 // tripObj.start_time = moment.utc(tripData.timeToLeave).format();
 			tripObj.created_time = moment.utc().format();
-			tripModel.getOne({"startLocation":tripObj.startLocation,"endLocation":tripObj.endLocation,"user_id":tripObj.user_id,"start_time":tripObj.start_time},function(errTrip,tripResult){
+		     Trip.findOne({"startLocation":tripObj.startLocation,"endLocation":tripObj.endLocation,"user_id":tripObj.user_id,"start_time":tripObj.start_time},function(errTrip,tripResult){
 				if(errTrip){
 					res.status(500);
 					res.send({"status":"error","msg":"Error while getting the trip results."});
@@ -152,13 +153,14 @@ var host = "http://localhost";
 					routeCallback();
 				});
 			},function(errRoute){
-				 tripModel.insert(tripObj,function(err,tripResult){
+				 var tripObjResult = new Trip(tripObj);
+				   tripObjResult.save(function(err,tripResult){
 					if(err){
 						res.status(500);
 						res.send({"status":"error","msg":"error while inserting the trip"});
 					}else{
 						res.status(200);
-						res.send({"status":"success","tripObj":tripObj});
+						res.send({"status":"success","tripObj":tripObjResult});
 					}
 				})
 			});
@@ -186,7 +188,7 @@ var host = "http://localhost";
 		var distance = 1;
 		var start_time = moment(matchObj.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().subtract('10','minutes').format();//matchObj.start_time.subtract('10','minutes').format(); // moment.utc()
 		var end_time = moment.utc(matchObj.timeToLeave).add('10','minutes').format();  // moment.utc() 
-		 tripModel.get({"startLocation":{ $nearSphere : {$geometry: matchObj.startLocation, $maxDistance: (distance * 1000) }},"endLocation":{ $nearSphere : {$geometry: matchObj.endLocation, $maxDistance: (distance * 1000) }},"start_time":{$gte:start_time,$lte:end_time}},function(tripErr,tripResults){
+		 Trip.find({"startLocation":{ $nearSphere : {$geometry: matchObj.startLocation, $maxDistance: (distance * 1000) }},"endLocation":{ $nearSphere : {$geometry: matchObj.endLocation, $maxDistance: (distance * 1000) }},"start_time":{$gte:start_time,$lte:end_time}},function(tripErr,tripResults){
 			if(tripErr){
 				callback(tripErr,null);
 			}else{
@@ -207,10 +209,10 @@ var host = "http://localhost";
 
 		async.parallel({
 			start:function(startCallback){
-			  tripModel.get({"startLocation" : { $nearSphere : {$geometry: routes.startLocation, $maxDistance: (distance * 1000) }}},startCallback);
+		       Trip.find({"startLocation" : { $nearSphere : {$geometry: routes.startLocation, $maxDistance: (distance * 1000) }}},startCallback);
 			},
 			end:function(endCallback){
-			  tripModel.get({"endLocation": { $nearSphere : {$geometry: routes.endLocation, $maxDistance: (distance * 1000) }}},endCallback);
+			   Trip.find({"endLocation": { $nearSphere : {$geometry: routes.endLocation, $maxDistance: (distance * 1000) }}},endCallback);
 			}
 		},function(errTrip,matchResult){
 			console.log(matchResult);
@@ -227,11 +229,17 @@ var host = "http://localhost";
 				var matchids = underscore.intersection(startLocation_ids,endLocation_ids);
 				async.eachSeries(matchids,function(eachMatch_id,tripCallback){
 				 var matchObj = underscore.find(matchResult.start, function(obj) { return obj._id == eachMatch_id });
-					userModel.getById(matchObj.user_id,function(err,userResult){
+				 matchObj = matchObj.toObject();
+				 matchObj.userResult = {};
+					 User.findOne({_id:matchObj.user_id},function(err,userResult){
 						if(err){
+							console.log(err);
 							tripCallback(err);
 						}else{
+						 //	console.log(userResult);
 							matchObj.userResult = userResult;
+						  //	console.log(matchObj.userResult);
+						  //	console.log(matchObj);
 							resultTrips.push(matchObj);
 							tripCallback();
 						}
@@ -257,7 +265,7 @@ var host = "http://localhost";
 		if(shareData.trip_id){
 			var trip_id = shareData.trip_id;
 			var user_id = shareData.user_id;
-			db.collection("matches").findOne({"trip_id":trip_id,"user_id":user_id},function(errMatch,MatchResults){
+			 Matche.findOne({"trip_id":trip_id,"user_id":user_id},function(errMatch,MatchResults){
 				if(errMatch){
 					res.status(500);
 					res.send({"status":"error","msg":"error while finding the result"});
@@ -265,12 +273,12 @@ var host = "http://localhost";
 					res.status(409);
 					res.send({"status":"error","msg":"You already sended request to these user"});
 				}else{
-					tripModel.getOne({"_id":shareData.trip_id},function(errr,tripDetails){
+				   Trip.findOne({"_id":shareData.trip_id},function(errr,tripDetails){
 			if(errr){
 				res.status(500);
 				res.send({"status":"error","msg":"error while getting the trip data."});
 			}else if(tripDetails){
-				userModel.getById(tripDetails.user_id,function(userErr,userResult){
+			     User.findOne({_id:tripDetails.user_id},function(userErr,userResult){
 					if(userErr){
 						res.status(500);
 						res.send({"status":"error","msg":"error while getting the user information"});
@@ -318,8 +326,8 @@ var host = "http://localhost";
 								res.status(500);
 								res.send({"status":"error","msg":"Error while sending details sms and email","err":err});
 							}else{
-
-								db.collection("matches").insert(matchObj,function(matchErr,matchResult){
+								var matchObjResult = new Matche(matchObj);
+						       matchObjResult.save(function(matchErr,matchResult){
 									if(matchErr){
 										res.status(500);
 										res.send({"status":"error","msg":"Error in match result"});
@@ -353,7 +361,7 @@ var host = "http://localhost";
 	 function contactPage(req,res,next){
 		var match_id = req.params.match_id;
 		if(match_id){
-			db.collection("matches").findOne({"_id":match_id},function(matchErr,shareResults){
+			 Matche.findOne({"_id":match_id},function(matchErr,shareResults){
 				if(matchErr){
 					res.status(500);
 					res.send({"status":"error","msg":"error while getting the information"});
@@ -361,10 +369,10 @@ var host = "http://localhost";
 
 					async.parallel({
 						shareUser:function(shareCallback){
-							userModel.getOne({"_id":shareResults.user_id},shareCallback);
+						     User.findOne({"_id":shareResults.user_id},shareCallback);
 						},
 						tripUser:function(tripCallback){
-							 tripModel.getOne({"_id":shareResults.trip_id},function(tripErr,tripResult){
+							 Trip.findOne({"_id":shareResults.trip_id},function(tripErr,tripResult){
 								if(tripErr){
 									tripCallback(tripErr,null);
 								}else if(tripResult){
@@ -412,14 +420,14 @@ var host = "http://localhost";
 		var shareObj = req.body;
 		async.parallel({
 						shareUser:function(shareCallback){
-							userModel.getOne({"_id":shareObj.user_id},shareCallback);
+							 User.findOne({"_id":shareObj.user_id},shareCallback);
 						},
 						tripUser:function(tripCallback){
-							 tripModel.getOne({"_id":shareObj.trip_id},function(tripErr,tripResult){
+							  Trip.findOne({"_id":shareObj.trip_id},function(tripErr,tripResult){
 								if(tripErr){
 									tripCallback(tripErr,null);
 								}else if(tripResult){
-									userModel.getOne({"_id":tripResult.user_id},function(uErr,userResult){
+								      User.findOne({"_id":tripResult.user_id},function(uErr,userResult){
 										if(uErr){
 											tripCallback(uErr,null);
 										}else if(userResult){
@@ -453,14 +461,14 @@ var host = "http://localhost";
 	 	if((contactInfo.user_id)&&(contactInfo.trip_id)){
 	 	async.parallel({
 						shareUser:function(shareCallback){
-							userModel.getOne({"_id":contactInfo.user_id},shareCallback);
+							 User.findOne({"_id":contactInfo.user_id},shareCallback);
 						},
 						tripUser:function(tripCallback){
-							 tripModel.getOne({"_id":contactInfo.trip_id},function(tripErr,tripResult){
+							 Trip.findOne({"_id":contactInfo.trip_id},function(tripErr,tripResult){
 								if(tripErr){
 									tripCallback(tripErr,null);
 								}else if(tripResult){
-								          userModel.getOne({"_id":tripResult.user_id},function(uErr,userResult){
+								          User.findOne({"_id":tripResult.user_id},function(uErr,userResult){
 										if(uErr){
 											tripCallback(uErr,null);
 										}else if(userResult){
@@ -546,7 +554,7 @@ var host = "http://localhost";
 						if(shareData.start_date){
 							if(shareData.start_time){
 								if(shareData.user_id){
-									shareData.timeToLeave = moment(moment(shareData.start_date,"DD MMMM, YYYY").format("YYYY-MM-DD")+"T"+moment(shareData.start_time,"hh:mm a").format("HH:mm:ss")).utc().format(); // moment(shareData.start_date+"T"+moment(shareData.start_time,"hh:mm A").format("HH:mm:ss")).format();
+									shareData.timeToLeave = moment(moment(shareData.start_date,"DD MMMM, YYYY").format("YYYY-MM-DD")+"T"+moment(shareData.start_time,"hh:mm a").format("HH:mm:ssZ")).utc().format(); // moment(shareData.start_date+"T"+moment(shareData.start_time,"hh:mm A").format("HH:mm:ss")).format();
 
 var x = 1;
 
@@ -587,10 +595,11 @@ geocoder.geocode(shareData.from, function ( errs, geocodeData ) {
 	}
 },function(matchErr,finalResult){
 if(matchErr){
+	console.log(matchErr);
 	res.status(500);
 	sendError(matchErr,"Error while getting matches",res);
 }else if((finalResult)&&(finalResult.matchResults)){
-	userModel.getById(finalResult.insertMatch.user_id,function(err,userObj){
+ User.findOne({_id:finalResult.insertMatch.user_id},function(err,userObj){
 		if(err){
 			res.status(500);
 			sendError(err,"Error while finding the result",res);
@@ -644,11 +653,15 @@ if(matchErr){
 
 
 		function checkNewUser(shareInfo,callback){
-
-			matchShareModel.getOne({"startLocation":shareInfo.startLocation,"endLocation":shareInfo.endLocation,"start_time":shareInfo.timeToLeave,"user_id":shareInfo.user_id},function(matchError,matchResult){
+		 //	shareInfo.timeToLeave = shareInfo.timeToLeave+"Z";
+		    shareInfo.timeToLeave = moment(shareInfo.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").toISOString();
+			 MatchShare.findOne({"startLocation":shareInfo.startLocation,"endLocation":shareInfo.endLocation,"start_time": shareInfo.timeToLeave,"user_id":shareInfo.user_id},function(matchError,matchResult){
 				if(matchError){
+					console.log(matchError);
 					callback(matchError,null);
 				}else if(matchResult){
+					console.log("matchResult found");
+					console.log(matchResult);
 					var updateObj = {};
 						updateObj._id = matchResult._id;
 					if(matchResult.split_amount){
@@ -755,7 +768,8 @@ if(matchErr){
 					routeCallback();
 				});
 			},function(errRoute){
-				 matchShareModel.insert(tripObj,function(err,tripResult){
+				var matchShareObj = new MatchShare(tripObj);
+			     matchShareObj.save(function(err,tripResult){
 					if(err){
 						callback(err,null);
 					 // res.send({"status":"error","msg":"error while inserting the trip"});
@@ -792,10 +806,10 @@ if(matchErr){
 
 		async.parallel({
 			start:function(startCallback){
-				matchShareModel.getRestrictFields({"startLocation" : { $nearSphere : {$geometry: matchData.startLocation, $maxDistance: (distance * 1000) }},"start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}},{"trip_details":false,"Routes":false},startCallback);
+				MatchShare.find({"startLocation" : { $nearSphere : {$geometry: matchData.startLocation, $maxDistance: (distance * 1000) }}},{"trip_details":false,"Routes":false},startCallback); // "start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}
 			},
 			end:function(endCallback){
-				matchShareModel.getRestrictFields({"endLocation": { $nearSphere : {$geometry: matchData.endLocation, $maxDistance: (distance * 1000) }},"start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}},{"trip_details":false,"Routes":false},endCallback);
+			    MatchShare.find({"endLocation": { $nearSphere : {$geometry: matchData.endLocation, $maxDistance: (distance * 1000) }}},{"trip_details":false,"Routes":false},endCallback); // "start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}
 			}
 		},function(errTrip,matchResult){
 			console.log(matchResult);
@@ -826,7 +840,7 @@ if(matchErr){
 					resultObj.carType = "Indica A/C";
 					resultObj.startDate = moment(matchObj.start_time,"YYYY-MM-DDTHH:mm:ssZ").format("DD MMMM, YYYY");
 					resultObj.startTime = moment(matchObj.start_time,"YYYY-MM-DDTHH:mm:ssZ").format("hh:mm a");
-					userModel.getOneRestricted({"_id":matchObj.user_id},{"_id":true,"provider_id":true,"username":true,"email":true,"phonenumber":true,"image_url":true},function(err,userResult){
+					 User.findOne({"_id":matchObj.user_id},{"_id":true,"provider_id":true,"username":true,"email":true,"phonenumber":true,"image_url":true},function(err,userResult){
 						if(err){
 							tripCallback(err);
 						}else{
@@ -908,7 +922,7 @@ if(matchErr){
 		function updateMatches(matchObj,callback){
 			var car = matchObj.car;
 			var split_amount = matchObj.split_amount;
-			matchShareModel.update({"_id":matchObj._id},{"car":car,"split_amount":split_amount},callback);
+			MatchShare.update({"_id":matchObj._id},{"$set":{"car":car,"split_amount":split_amount}},callback);
 		}
 
 		// var cron = require('node-schedule');
