@@ -8,7 +8,7 @@ var loginAuditModel = new Schema({
 	user_id:{type:String},
 	location:{type:{type:String,default:"Point"},coordinates:{type:Array}},
 	full_address:{type:String},
-	datetime:{type:String,default:moment.utc().format()}
+	datetime:{type:Date,default:moment.utc().format()}
 });
 
 var LoginAudit = mongoose.model("LoginAudit",loginAuditModel);

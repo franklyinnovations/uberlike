@@ -43,6 +43,10 @@ var tripModel = new Schema({
 	}]
 });
 
+tripModel.index({startLocation : '2dsphere'});
+
+tripModel.index({endLocation : '2dsphere'});
+
 var Trip = mongoose.model("Trip",tripModel);
 
 module.exports= Trip;

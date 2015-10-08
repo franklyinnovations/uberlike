@@ -1,4 +1,4 @@
-var passengerController = function(){
+var passengerController = function(User,Trip,TaxiLocation,MatchShare,Matche){
 
 var uuid = require('node-uuid');
 var moment = require('moment');
@@ -14,11 +14,11 @@ var request = require('request');
   // var tripModel = require('../models/trip')();
   // var userModel = require('../models/user')();
 
-var MatchShare = require('../models/matchShareModel');
-var TaxiLocation = require('../models/taxiLocationModel');
-var Trip = require('../models/tripModel');
-var User = require('../models/userModel');
-var Matche = require('../models/matchesModel');
+var MatchShare = MatchShare || require('../models/matchShareModel');
+var TaxiLocation = TaxiLocation || require('../models/taxiLocationModel');
+var Trip = Trip || require('../models/tripModel');
+var User = User || require('../models/userModel');
+var Matche = Matche || require('../models/matchesModel');
 
 var geocoderProvider = 'google';
 var httpAdapter = 'https';
@@ -34,6 +34,8 @@ var polyline = require('polyline');
  //console.log(moment("2015-04-13T06:06:08+00:00","YYYY-MM-DDTHH:mm:ssZ").utc().format());
 
 var host = "http://localhost";
+
+ // console.log(moment("2015-09-18T10:15:18Z").format());
 
 console.log(moment(moment(moment("7 October, 2015","DD MMMM, YYYY").format("YYYY-MM-DD")+"T"+moment("6:38 PM","hh:mm a").format("HH:mm:ssZ")).utc().format()).toISOString());
 	
@@ -95,7 +97,8 @@ console.log(moment(moment(moment("7 October, 2015","DD MMMM, YYYY").format("YYYY
 			tripObj.start_time = moment(tripData.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().format();  // "2015-04-13T06:06:08+00:00"
 		 // tripObj.start_time = moment.utc(tripData.timeToLeave).format();
 			tripObj.created_time = moment.utc().format();
-		     Trip.findOne({"startLocation":tripObj.startLocation,"endLocation":tripObj.endLocation,"user_id":tripObj.user_id,"start_time":tripObj.start_time},function(errTrip,tripResult){
+			console.log(tripObj);
+		     Trip.findOne({"startLocation":{"coordinates":tripObj.startLocation.coordinates,"type":"Point"},"endLocation":{"coordinates":tripObj.endLocation.coordinates,"type":"Point"},"user_id":tripObj.user_id,"start_time":tripObj.start_time},function(errTrip,tripResult){
 				if(errTrip){
 					res.status(500);
 					res.send({"status":"error","msg":"Error while getting the trip results."});
@@ -203,16 +206,18 @@ console.log(moment(moment(moment("7 October, 2015","DD MMMM, YYYY").format("YYYY
 		var distance = 1;
 		var start_time = moment(routes.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().subtract('10','minutes').format();
 		var end_time = moment(routes.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().add('10','minutes').format();
+	     //	console.log(routes.user_id);
+		var user_id = routes.user_id;
 		var resultTrips = [];
 
 		//   "start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}
 
 		async.parallel({
 			start:function(startCallback){
-		       Trip.find({"startLocation" : { $nearSphere : {$geometry: routes.startLocation, $maxDistance: (distance * 1000) }}},startCallback);
+		       Trip.find({"startLocation" : { $nearSphere : {$geometry: routes.startLocation, $maxDistance: (distance * 1000) }},"start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}},startCallback);
 			},
 			end:function(endCallback){
-			   Trip.find({"endLocation": { $nearSphere : {$geometry: routes.endLocation, $maxDistance: (distance * 1000) }}},endCallback);
+			   Trip.find({"endLocation": { $nearSphere : {$geometry: routes.endLocation, $maxDistance: (distance * 1000) }},"start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}},endCallback);
 			}
 		},function(errTrip,matchResult){
 			console.log(matchResult);
@@ -566,8 +571,8 @@ geocoder.geocode(shareData.from, function ( errs, geocodeData ) {
 		
 	}else{
 		shareData.startLocation = {
-				"type":"Point",
-				"coordinates":[geocodeData[0].longitude,geocodeData[0].latitude]
+				"coordinates":[geocodeData[0].longitude,geocodeData[0].latitude],
+				"type":"Point"
 			}; 
 			geocoder.geocode(shareData.to,function(erre,geoEndData){
 	if((erre)||(!geoEndData)||(!(geoEndData.length))){
@@ -577,8 +582,8 @@ geocoder.geocode(shareData.from, function ( errs, geocodeData ) {
 
  }else{
 			shareData.endLocation = {
-				"type":"Point",
-				"coordinates":[geoEndData[0].longitude,geoEndData[0].latitude]
+				"coordinates":[geoEndData[0].longitude,geoEndData[0].latitude],
+				"type":"Point"
 			};
 			async.parallel({
 	insertMatch:function(shareInsertCallback){
@@ -653,15 +658,18 @@ if(matchErr){
 
 
 		function checkNewUser(shareInfo,callback){
-		 //	shareInfo.timeToLeave = shareInfo.timeToLeave+"Z";
-		    shareInfo.timeToLeave = moment(shareInfo.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").toISOString();
-			 MatchShare.findOne({"startLocation":shareInfo.startLocation,"endLocation":shareInfo.endLocation,"start_time": shareInfo.timeToLeave,"user_id":shareInfo.user_id},function(matchError,matchResult){
+		  //	shareInfo.timeToLeave = shareInfo.timeToLeave+"Z";
+		  //  shareInfo.timeToLeave = moment(shareInfo.timeToLeave,"YYYY-MM-DDTHH:mm:ss").toISOString(); // "start_time": shareInfo.timeToLeave,
+		    //console.log(shareInfo);
+			 MatchShare.findOne({"startLocation":shareInfo.startLocation,"endLocation":shareInfo.endLocation,"user_id":shareInfo.user_id},function(matchError,matchResult){
+				 console.log("match results");
+				 console.log(matchResult);				
 				if(matchError){
 					console.log(matchError);
 					callback(matchError,null);
 				}else if(matchResult){
 					console.log("matchResult found");
-					console.log(matchResult);
+				 //	console.log(matchResult);
 					var updateObj = {};
 						updateObj._id = matchResult._id;
 					if(matchResult.split_amount){
@@ -690,6 +698,7 @@ if(matchErr){
 					}
 
 				}else{
+					console.log("match result not found");
 						var url = "https://maps.googleapis.com/maps/api/directions/json?origin="+shareInfo.from+"&destination="+shareInfo.to+"&key=AIzaSyDVksvEMbTZTClxjY-touspszFsJSutiIY";   // &waypoints=iigihi
 									request(url, function (error, response, directIonResult) {
 										if(directIonResult){
@@ -794,8 +803,8 @@ if(matchErr){
 		}
 
 		function mathedRides(matchData,callback){
-			console.log(matchData.startLocation);
-			console.log(matchData.endLocation);
+		 //	console.log(matchData.startLocation);
+		 //	console.log(matchData.endLocation);
 			var distance = 1;
 		var start_time = moment(matchData.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().subtract('10','minutes').format();
 		var end_time = moment(matchData.timeToLeave,"YYYY-MM-DDTHH:mm:ssZ").utc().add('10','minutes').format();
@@ -806,13 +815,13 @@ if(matchErr){
 
 		async.parallel({
 			start:function(startCallback){
-				MatchShare.find({"startLocation" : { $nearSphere : {$geometry: matchData.startLocation, $maxDistance: (distance * 1000) }}},{"trip_details":false,"Routes":false},startCallback); // "start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}
+				MatchShare.find({"startLocation" : { $nearSphere : {$geometry: matchData.startLocation, $maxDistance: (distance * 1000) }},"start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}},{"trip_details":false,"Routes":false},startCallback); // "start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}
 			},
 			end:function(endCallback){
-			    MatchShare.find({"endLocation": { $nearSphere : {$geometry: matchData.endLocation, $maxDistance: (distance * 1000) }}},{"trip_details":false,"Routes":false},endCallback); // "start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}
+			    MatchShare.find({"endLocation": { $nearSphere : {$geometry: matchData.endLocation, $maxDistance: (distance * 1000) }},"start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}},{"trip_details":false,"Routes":false},endCallback); // "start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}
 			}
 		},function(errTrip,matchResult){
-			console.log(matchResult);
+		 //	console.log(matchResult);
 			if(errTrip){
 				console.log("Error:--------");
 				console.log(errTrip);
@@ -821,8 +830,8 @@ if(matchErr){
 			}else if((matchResult)&&(matchResult.start)&&(matchResult.end)&&(matchResult.start.length)&&(matchResult.end.length)){
 				var startLocation_ids = underscore.pluck(matchResult.start,'_id');
 				var endLocation_ids = underscore.pluck(matchResult.end,'_id');
-				console.log(startLocation_ids);
-				console.log(endLocation_ids);
+			 //	console.log(startLocation_ids);
+			 //	console.log(endLocation_ids);
 				var matchids = underscore.intersection(startLocation_ids,endLocation_ids);
 				var resultObj = {};
 				async.eachSeries(matchids,function(eachMatch_id,tripCallback){
@@ -838,8 +847,8 @@ if(matchErr){
 					resultObj.cabService = "Uber";
 					resultObj.cabServiceLogo = host+"/images/uberLogo.jpg";
 					resultObj.carType = "Indica A/C";
-					resultObj.startDate = moment(matchObj.start_time,"YYYY-MM-DDTHH:mm:ssZ").format("DD MMMM, YYYY");
-					resultObj.startTime = moment(matchObj.start_time,"YYYY-MM-DDTHH:mm:ssZ").format("hh:mm a");
+					resultObj.startDate = moment(matchObj.start_time).format("DD MMMM, YYYY");
+					resultObj.startTime = moment(matchObj.start_time).format("hh:mm a");
 					 User.findOne({"_id":matchObj.user_id},{"_id":true,"provider_id":true,"username":true,"email":true,"phonenumber":true,"image_url":true},function(err,userResult){
 						if(err){
 							tripCallback(err);

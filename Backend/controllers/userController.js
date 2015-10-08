@@ -1,4 +1,4 @@
-var userController = function(){
+var userController = function(User,LoginAudit){
 	/*
 	var mongo = require('mongoskin');
 if(process.env.ENV == 'Test'){
@@ -22,8 +22,11 @@ var bcrypt = require('bcrypt-node');
 // var userModel = require('../models/user')();
 // var loginAuditModel = require('../models/loginAudit')();
 
-var User = require('../models/userModel');
-var LoginAudit = require('../models/loginAuditModel');
+var User = User || require('../models/userModel');
+var LoginAudit = LoginAudit || require('../models/loginAuditModel');
+
+var email = require('../services/email');
+var sms = require('../services/sms');
 
 var host = "http://localhost:3000";
 
@@ -125,7 +128,7 @@ user.gender = data.gender;
 
 // Inserting userinformation by registering
 
-var insertUsers = function(req,res,next){
+var insertUsers = function(req,res){
 
 var userData = new User(req.body);
 console.log(userData);
@@ -167,6 +170,7 @@ res.send({"status":"error","msg":"user email or phone number already exists"});
 	});
 	userData.gender = userData.gender || 'male';
 	userData.signupdate = moment.utc().format(); // 'YYYY-MM-DDTHH:mm:ss'
+
     userData.save(function(err,result1){
      if(err){
      	res.status(500);
@@ -179,11 +183,13 @@ res.send({"status":"error","msg":"user email or phone number already exists"});
      	emilValues.conformationlink = host+"/conf/user/"+confirmid;
      //	console.log(emilValues);
      	app.render("register-mail",emilValues,function(error,html){
+     		// console.log(error);
      		if(error){
      			console.log(error,html);
      			res.status(500);
      			res.send({"status":"error","msg":"mail sending failed."});
      		}else{
+     		 //	console.log(html);
      			var emailDetails = {};
      		emailDetails.email = userData.email;
      		emailDetails.html = html;//"conform mail by click <a href="+emilValues.conformationlink+">here</a>";//html;
@@ -194,7 +200,7 @@ res.send({"status":"error","msg":"user email or phone number already exists"});
      		 		res.status(500);
      		 		res.send({"status":"error","msg":"mail sending to user is failed"});
      		 	}else{
-
+     		 		console.log("mail sending successfully");
      		 	 //	
      		 	 var messagetext = "Please confirm your mobile number by entering :-"+userData.mconfid+"."+"To continue verification process";
      		 	 var mobilenumber = userData.phonenumber; 

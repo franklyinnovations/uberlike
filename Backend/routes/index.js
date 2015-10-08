@@ -9,6 +9,8 @@ var moment = require('moment');
 
 //controller initialization
 
+   // var User = require('../models/userModel');
+
 var userController = require('../controllers/userController')();
 
 var passengerController = require('../controllers/passengerController')();

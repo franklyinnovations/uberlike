@@ -1,11 +1,11 @@
- var driverController = function(){
+ var driverController = function(TaxiLocation){
 var uuid = require('node-uuid');
 var moment = require('moment');
 var validator = require('validator');
 
 //var taxiLocationModel = require('../models/taxiLocation')();
 
-var TaxiLocation = require('../models/taxiLocationModel');
+var TaxiLocation = TaxiLocation || require('../models/taxiLocationModel');
 
 	 function saveTaxiLocation(req,res,next){
 	 	var taxiLocationObj = new TaxiLocation(req.body);

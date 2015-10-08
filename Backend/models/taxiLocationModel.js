@@ -12,6 +12,8 @@ var taxiLocationModel = new Schema({
 	date_time:{type:Date,default:moment.utc().format()}
 });
 
+taxiLocationModel.index({location : '2dsphere'});
+
 var TaxiLocation = mongoose.model("TaxiLocation",taxiLocationModel);
 
 module.exports= TaxiLocation;

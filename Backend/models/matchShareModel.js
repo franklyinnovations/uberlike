@@ -43,6 +43,10 @@ var matchShareModel = new Schema({
 	}]
 });
 
+matchShareModel.index({startLocation : '2dsphere'});
+
+matchShareModel.index({endLocation : '2dsphere'});
+
 var MatchShare = mongoose.model("MatchShare",matchShareModel);
 
 module.exports= MatchShare;
