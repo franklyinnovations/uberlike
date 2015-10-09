@@ -1,139 +1,262 @@
- // var should = require('should'),
- //   sinon = require('sinon');
- var request = require('request');
-    var assert = require('assert');
-    var host = 'http://localhost';
+var assert = require('assert');
+var should = require('should');
+var sinon = require('sinon');
+var mongoose = require('mongoose');
+var express = require('express');
+var exphbs = require('express-handlebars');
+app = express();
+app.engine('hbs', exphbs({
+  defaultLayout : 'main'
+}));
+app.set('view engine', 'hbs');
+app.set('views',  __dirname+'/../views');    // /home/venu/Documents/Venu/uberlike/Backend 
 
-describe('user Controller Tests:', function(){
-    describe('insertUsers', function(){
-        it('should check already existing useraccount', function(done){
-            var userObj = {
-                    email:'venubabu.6799@gmail.com',
-                    password:'92901529',
-                    phonenumber:'9542750395'
-                };
-              //  var result ;
-                request.post(host+'/insertuser',{form:userObj},function(err,response,result){
-                    console.log(err);
-                    console.log(response.statusCode);
-                    console.log(JSON.parse(result).msg);
-                  //  assert.equal(err,null,"No internal errors");
-                   // assert.equal(response.statusCode,500);
-                   var result = JSON.parse(result);
-                      assert.equal(response.statusCode,409,"status 409");
-                      assert.equal(result.msg,'user email or phone number already exists',"existing user");
-                      done();
-                });
-             //   done();
-     });
-        it('should say invalid email address',function(done){
-            var userObj = {
-                email:'venubabu',
-                password:'92901529',
-                phonenumber:'9542750395'
-            };
-            request.post(host+'/insertuser',{form:userObj},function(err,response,result){
-              //  assert.equal(err,null,"No internal errors");
-              result = JSON.parse(result);
-              console.log(result.msg);
-                assert.equal(response.statusCode,400,"status 400");
-                assert.equal(result.msg,"Please enter valid email","Invalid email");
-                done();
-            });
-        });
-        it('should say phonenumber is invalid',function(done){
-            var userObj = {
-                email:'venubabu@gmail.com',
-                password:'92901529',
-                phonenumber:'95427503956'
-            };
-            request.post(host+'/insertuser',{form:userObj},function(err,response,result){
-              //  assert.equal(err,null,"No internal errors");
-              result = JSON.parse(result);
-              console.log(result.msg);
-                assert.equal(response.statusCode,400,"status 400");
-                assert.equal(result.msg,"Please enter valid Phone number","phonenumber is in valid");
-                done();
-            });
-        });
+var db;
+ // db = mongoose.connect("mongodb://localhost/test");
+
+var User = require('../models/userModel');
+
+var userController = require('../controllers/userController')();
+
+ before(function(done){ 
+ db = mongoose.connect("mongodb://localhost/test");
+ done();
     });
- describe('login User',function(){
-    it('should say login successfully',function(done){
-        var userObj = {
-            "email":"titaniumstudio0@gmail.com",
-  "password":"92901529"
+
+var userObj = {};
+
+describe('User controller tests:', function(){
+
+        it('should say user inserted suceessfully', function(done){
+          //  var User = function(user){this.save = function(){}};
+          //  User.findOne = function(condition,resultcallback){resultcallback(null,null);};
+
+               var result = {};
+
+            var req = {
+                body: {
+                    "username":"venu babu",
+                    "email":"titaniumstudio0@gmail.com",
+                    "phonenumber":"9542750395",
+                    "password":"92901529"
+                }
+            }
+            var res = {
+                status: sinon.spy(),  // function(status){console.log(status); result.status = status;},  // sinon.spy(),
+                send: sinon.spy() // function(obj){console.log(obj);result.objectData = obj;} // sinon.spy()  //  function(obj){console.log(obj);}//sinon.spy()
+            }
+
+            
+
+          //  var bookController = require('../Controllers/bookController')(Book);
+
+          //  bookController.post(req,res);
+            userController.insertUsers(req,res);
+          //  console.log(res.status);
+          //  console.log(res.status);
+          setTimeout(function(){
+             res.status.calledWith(201).should.equal(true, 'USER inserted successfully');
+             done();
+         },8000);
+         //  assert.equal(result.status,201);
+
+          //  console.log(res.send);
+           // res.send.calledWith('Title is required').should.equal(true);
+        });
+        
+       it('should say login successfully',function(done){
+        var req = {
+
         }
-        request.post(host+'/login/passenger',{form:userObj},function(error,response,result){
-            result = JSON.parse(result);
-         //   console.log(result);
-            assert.equal(response.statusCode,200,"status 200");
-         //   assert.equal(result.msg,"User login successfull");
-            done();
-        });
-    });
- });
- describe('forgot password',function(){
-    it('should say email sended successfully',function(done){
-        var userObj = {
-              "email":"titaniumstudio0@gmail.com"
-        };
-        request.post(host+'/forgotpassword',{form:userObj},function(error,response,result){
-            result = JSON.parse(result);
-            console.log(result);
-            assert.equal(response.statusCode,200,"status 200");
-            assert.equal(result.msg,"Email send to titaniumstudio0@gmail.com successfully.");
-            done();
-        });
-    });
- });
- describe('Reset password',function(){
-  it('should say password reset successfully',function(done){
-       var userObj = {
-        "_id":"f6a5d829-ffb5-4389-b5f3-9de267b71740",
-        "password":'92901529'
-       };
-       request.post(host+'/reset/password',{form:userObj},function(error,response,resultData){
-        resultData = JSON.parse(resultData);
-        console.log(resultData.msg);
-        assert.equal(response.statusCode,200,"status 200");
-        assert.equal(resultData.msg,"Password resetting successfullY!","resetting password successfully.");
-        done();
+        req.body={
+          "email":"titaniumstudio0@gmail.com",
+          "password":"92901529"
+        }
+        var res = {
+          status:sinon.spy(),
+          send: function(obj){console.log(obj); userObj = obj.userdata} // sinon.spy()
+        }
+        userController.login(req,res);
+        setTimeout(function(){
+          res.status.calledWith(200).should.equal(true,"USER login successfully");
+          done();
+        },1000);
        });
-  });
- });
- describe("updating phone number",function(){
-  it('should say phonenumber updated successfully',function(done){
-    var userObj = {
-      _id:"5f1077fe-1cfc-4c54-9294-c7072470a388",
-      phonenumber:"9542750395"
-    };
-    request.post(host+'/update/mobilenumber',{form:userObj},function(error,response,resultData){
-       resultData = JSON.parse(resultData);
-       console.log(resultData.msg);
-       assert.equal(response.statusCode,200,"status 200");
-       assert.equal(resultData.msg,"MobileNumber updated successfully.","phone number updation successfully");
-       done();
-    });
-  });
- });
 
- // phonenumber licenceId vnumber ctype
- describe("updating driver details",function(){
-  it('should say driver details updated successfully',function(done){
-      var userObj = {
-        phonenumber:'9542750395',
-        licenceId:'Ab23CD3426',
-        vnumber:'AP30DS1206',
-        ctype:'Ambasidor',
-        _id:"5f1077fe-1cfc-4c54-9294-c7072470a388"
-      };
-      request.post(host+'/update/driverdetails',{form:userObj},function(error,response,result){
-        result = JSON.parse(result);
-        console.log(result.msg);
-        assert.equal(response.statusCode,200,"status 200");
-        assert.equal(result.msg,"Driver details updated successfully.Please confirm your mobile number","driver details updation successfull");
+       it('should say forgot password mail send successfully',function(done){
+      var req = {};
+      req.body = {"email":"titaniumstudio0@gmail.com"};
+      var res = {
+        status:sinon.spy(),
+        send:sinon.spy()
+      }
+      userController.forgotPassword(req,res);
+      setTimeout(function(){
+        res.status.calledWith(200).should.equal(true,"FORGOT PASSWORD mail send successfully");
         done();
+      },4000);
+     });
+
+      it('should say confirmed user mail',function(done){
+        /*
+        User.findOne({"email":"titaniumstudio0@gmail.com"},function(err,result){
+          if(err){
+            console.log(err);
+            assert
+          }
+          assert(err,null);
+
+        })
+      */
+          console.log(userObj.confid);
+         var req = {};
+         req.params = {};
+          req.body = {confirmId:userObj.confid};
+          var res = {
+            status:sinon.spy(),
+            send:sinon.spy()
+          };
+          userController.emailConfirmation(req,res);
+
+          setTimeout(function(){
+            res.status.calledWith(200).should.equal(true,"USER email confirmed successfully");
+            done();
+          },2000);
       });
-  });
- });
+
+      it('should say password restted successfully',function(done){
+        var req = {};
+        req.body = {
+          _id:userObj._id,
+          password:'95427503'
+        };
+        var res = {
+          status:sinon.spy(),
+          send:sinon.spy()
+        }
+
+         userController.resetPasswd(req,res);
+
+         setTimeout(function(){
+          res.status.calledWith(200).should.equal(true,"USER password restet successfull");
+          done();
+         },1000);
+
+      });
+
+      it('should say mobile number verified successfully',function(done){
+        var req = {};
+        req.body = {
+          "_id":userObj._id,
+          "mconfid":userObj.mconfid
+        }
+        var res = {
+          status:sinon.spy(),
+          send:sinon.spy()
+        };
+        userController.verifyMobileNumber(req,res);
+
+        setTimeout(function(){
+          res.status.calledWith(200).should.equal(true,"USER mobile number confirmed successfully");
+          done();
+        },1000);
+      });
+
+      it('should say driver details updated successfully',function(done){
+        
+        var req = {};
+
+        req.body = {
+          "_id":userObj._id,
+          "phonenumber":"8142322179",
+          "licenceId":"APIK1087",
+          "vnumber":"APJIOPDS",
+          "ctype":"innovo"
+        }
+
+        var res = {
+        status:sinon.spy(),
+        send:sinon.spy()
+      };
+
+       userController.updateDriverDetails(req,res);
+
+       setTimeout(function(){
+        res.status.calledWith(200).should.equal(true,"DRIVER details updated successfully");
+        done();
+       },3000);
+
+      });
+
+      it('should say user phone number udated successfully',function(done){
+
+        var req = {};
+
+        req.body = {
+          "_id":userObj._id,
+          "phonenumber":"9542750395"
+        }
+
+        var res = {
+          status:sinon.spy(),
+          send:sinon.spy()
+        }
+
+        userController.updateMobileNumber(req,res);
+
+        setTimeout(function(){
+          res.status.calledWith(200).should.equal(true,"PASSENGER phonenumber updated successfully");
+          done();
+        },3000);
+
+      });
+
+      it('should say loginaudit information saved successfully',function(done){
+          var req = {
+
+          }
+
+          req.body = {
+            "user_id":userObj._id,
+            "location":{
+              "type":"Point",
+              "coordinates":[78,17]
+            },
+            "full_address":"HPS,hyderabad,India"
+          }
+
+          var res = {
+            status:sinon.spy(),
+            send:sinon.spy()
+          }
+
+          userController.loginAuditInsert(req,res);
+
+          setTimeout(function(){
+            res.status.calledWith(200).should.equal(true,"LOGINAUDIT information saved successfully");
+            done();
+          },1010);
+
+      });
+
+
+// conn.connection.db.dropDatabase();
+        
 });
+
+after(function(done){
+
+           // db.connection.db.dropDatabase();
+
+           for (var i in mongoose.connection.collections) {
+     mongoose.connection.collections[i].remove(function() {});
+   }
+
+   /*
+   mongoose.connection.close(function () {
+    done();
+   });
+*/
+        done();
+        
+        });

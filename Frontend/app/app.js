@@ -83,7 +83,6 @@ app.config(['$routeProvider',
       //      console.log(userobj);
            var url = next.$$route.originalPath;
            console.log(url);
-           
            if(url == "/maplocations"){
 
            } 
@@ -97,6 +96,8 @@ app.config(['$routeProvider',
                 $location.path("driverdashboard");
            }
            
+           }else if((url == "/login")||(url == "/signup")||(url == "/signupdriver")||(url == "/forgot")){
+
            }else if(!(($rootScope.userinfo)&&($rootScope.userinfo._id))){
             $location.path("/");
            }else if(!($rootScope.userinfo.confirm)){

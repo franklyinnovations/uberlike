@@ -31,9 +31,6 @@ var sms = require('../services/sms');
 var host = "http://localhost:3000";
 
 
- var controle = function (req,res,next){
-		res.send({"It's":"OK"});
-}
 
 var errorMsg = {
 	obj:"Error in user operation",
@@ -128,7 +125,7 @@ user.gender = data.gender;
 
 // Inserting userinformation by registering
 
-var insertUsers = function(req,res){
+var insertUsers = function(req,res,next){
 
 var userData = new User(req.body);
 console.log(userData);
@@ -396,6 +393,7 @@ if(err){
 	res.status(500);
 res.send({"status":"error","msg":"error while confirm user data"});
 }else if(result){
+	console.log("user result identified");
 	if(result.confirm == true){
 		res.status(409);
 		res.send({"status":"success","msg":"user already confirmed."});
@@ -557,7 +555,6 @@ function updateMobileNumber(req,res,next){
 				res.status(500);
 				res.send({"status":"error","msg":"Error while checking"});
 			}else{
-				console.log(result._id);
 				if((result)&&(userData._id != result._id)){
 					res.status(409);
 					res.send({"status":"error","msg":"These phonenumber is already exists.Please choose another one."});
@@ -777,7 +774,6 @@ res.send({"status":"success","msg":"Record updated successfully."});
 
 return {
  oauthLoginHandler:oauthLoginHandler,
-  controle:controle,
  insertUsers:insertUsers,
  login:login,
  forgotPassword:forgotPassword,

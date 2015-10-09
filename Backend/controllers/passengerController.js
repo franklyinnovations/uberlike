@@ -14,6 +14,9 @@ var request = require('request');
   // var tripModel = require('../models/trip')();
   // var userModel = require('../models/user')();
 
+var email = require('../services/email');
+var sms = require('../services/sms');
+
 var MatchShare = MatchShare || require('../models/matchShareModel');
 var TaxiLocation = TaxiLocation || require('../models/taxiLocationModel');
 var Trip = Trip || require('../models/tripModel');
@@ -76,12 +79,6 @@ console.log(moment(moment(moment("7 October, 2015","DD MMMM, YYYY").format("YYYY
 		}
 	 }
 
-	 function poliLineDecode(req,res,next){
-		var data = req.body;
-		var decodedData = polyline.decode("s}gwF~eibMOAwEUuCMFoCTwK@W@m@");   // stepResult.encripted_line
-				res.status(200);
-				res.send({"status":"success","decodedObj":decodedData});
-	 }
 
 	 function saveSearchData(req,res,next){
 		var tripData = req.body;
@@ -211,7 +208,7 @@ console.log(moment(moment(moment("7 October, 2015","DD MMMM, YYYY").format("YYYY
 		var resultTrips = [];
 
 		//   "start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}
-
+		  
 		async.parallel({
 			start:function(startCallback){
 		       Trip.find({"startLocation" : { $nearSphere : {$geometry: routes.startLocation, $maxDistance: (distance * 1000) }},"start_time":{$gte:start_time,$lt:end_time},"user_id":{"$ne":user_id}},startCallback);
@@ -938,7 +935,6 @@ if(matchErr){
 
 	return {
 		findNearTaxies:findNearTaxies,
-		poliLineDecode:poliLineDecode,
 		saveSearchData:saveSearchData,
 		findMatchedTrips:findMatchedTrips,
 		sendShareMessage:sendShareMessage,

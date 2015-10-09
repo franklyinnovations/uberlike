@@ -27,7 +27,6 @@ router.get('/', function(req, res, next) {
 
 //testuser operations controller
 
- router.get('/controle',userController.controle);
 
 
 router.post("/insertuser",userController.insertUsers); // insertuser

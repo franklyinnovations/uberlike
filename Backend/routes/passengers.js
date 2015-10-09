@@ -13,8 +13,6 @@ router.get('/', function(req, res, next) {
 
 router.post('/avilabletaxies',passengercontroller.findNearTaxies);
 
-router.post('/decoded/polyline',passengercontroller.poliLineDecode);
-
 router.post('/searched/trip',passengercontroller.saveSearchData);
 
 router.post('/match/trips',passengercontroller.findMatchedTrips);
